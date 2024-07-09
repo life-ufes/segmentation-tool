@@ -1,0 +1,9 @@
+numpy
+torch==2.0.0
+torchvision
+segment_anything
+supervision
+flask
+flask-cors
+onnx==1.16.1
+onnxruntime==1.15.1

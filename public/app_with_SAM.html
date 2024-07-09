@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    #img_seg { 
+        border: 1px solid black;
+        display: block;
+        margin: 0 auto;
+    }
+
+    #img_res { 
+        border: 1px solid black;
+        display: block;
+        margin: 0 auto;
+    }
+
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .col {
+        margin: 0 10px;
+    }
+
+    h1 {
+        font-size: 48px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    h4 {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 15px 0;
+    }
+
+    
+
+    .button {
+        margin: 10px;
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .colorButtonSelection {
+            margin: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s;
+            box-sizing: border-box; /* Add this line to include the border in the button's total width and height */
+        }
+
+    .colorButtonSelection:active {
+        transform: scale(0.9);
+    }
+
+    #redButton {
+        background-color: red;
+    }
+
+    #blueButton {
+        background-color: blue;
+    }
+
+    .colorSelection {
+        display: flex;
+        align-items: center;
+    }
+
+    
+
+    .button:hover {
+        background-color: #45a049;
+    }
+
+    .button-save {
+        margin: 10px;
+        padding: 10px 20px;
+        background-color: #008CBA;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .button-save:hover {
+        background-color: #007a9b;
+    }
+
+    .custom-file-upload {
+        padding: 10px;
+        border: 1px solid #ccc;
+        display: inline-block;
+        cursor: pointer;
+        background-color: #834b3dbe; /* Green background */
+        color: white; /* White text */
+        font-weight: bold;
+        text-align: center;
+        width: 200px;
+        transition: background-color 0.3s ease;
+    }
+
+    .custom-file-upload:hover {
+        background-color: #45a049; /* Darker green on hover */
+    }
+     /* Add this to your existing CSS */
+     .loader {
+        border: 4px solid #f3f3f3; /* Light grey */
+        border-top: 4px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 12px;
+        height: 12px;
+        animation: spin 2s linear infinite;
+    }
+  
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+</style>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+    <div display="flex" justify-content="center" align-items="center">
+        <h1>Automatic Image Segmentation Tool</h1>
+        <h2>Select one or more images to segment, use the points to indicate the areas to be segmented</h2>
+        <div style="display: flex;">
+            <div>
+                <input type="button" id="imageLoader" name="imageLoader" multiple style="display: none;"/>
+                <label for="imageLoader" class="custom-file-upload">
+                    Select images folder
+                </label>
+                <input type="text" id="folderName" name="folderName"/> 
+                    <!-- CANVAS -->
+                    <div class="row">
+                    <div class="col">                            
+                        <div style="margin: 15px 0;">
+                            <h4>Original Image</h4>
+                        </div>
+                        <!-- SEGMENTATION CANVAS -->
+                        <canvas id="img_seg" class="canvas_seg"></canvas>
+                    </div>
+
+                    <div class="col">
+                        <div style="margin: 15px 0;">
+                            <h4>Mask</h4>
+                        </div>
+                        <!-- CANVAS WITH RESULTING MASK -->
+                        <canvas id="img_res"></canvas>
+                     
+
+                        <div id="loading" class="loader" style="display: none;"></div>
+                    </div>
+             
+
+                    <div class="col">
+                        <button class="col button button-save" id="downloadImages">Download Images</button> 
+                    </div>
+
+                </div>
+               
+                
+            </div>
+           
+           
+            
+        </div>
+        <div id="selection_buttons" class="row" >
+            <div class="col">
+            <h4>Select the color that represents the mask</h4>
+
+                <div class="colorSelection">
+                    <button id="blueButton" class="colorButtonSelection"></button>
+                    <span>Part of the mask</span> 
+                </div>
+                <div class="colorSelection">
+                <button id="redButton" class="colorButtonSelection"></button>
+                <span>Not part of the mask</span> 
+                </div>
+            </div>
+
+
+            <div class="col">
+                <div class="row">   
+                <button class="col button" id="generateButton">Generate Mask</button>
+                <button class="col button" id="resetButton">Reset</button>
+                <button class="col button" id="pushButton">Next</button>
+                </div>
+            </div>  
+        </div>
+
+
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+
+        <script> 
+
+            var fileNames = [];
+
+                        
+            // Create a new zip file
+            var zip = new JSZip();
+
+
+            function zipAndDownload(){
+                
+                // Create a new zip file
+                var zip = new JSZip();
+                
+
+                if (images_ready.length === 0) {
+                    alert('Nenhuma imagem foi segmentada ainda');
+                    return;
+                }
+
+                // Add images to the zip file
+                images_ready.forEach((image, index) => {
+                    // Convert the image data to a Blob
+                    var imgData = image.src.split(',')[1];
+                    var imgBlob = b64toBlob(imgData, 'image/png');
+
+                    let image_name = fileNames[index];
+
+                    image_name = image_name + '.png';
+
+
+                    // Add the image Blob to the zip file
+                    zip.file(image_name, imgBlob, {base64: true});
+                });
+
+                // Generate the zip file and trigger the download
+                zip.generateAsync({type:"blob"})
+                .then(function(content) {
+                    saveAs(content, sessionIdentifier + '.zip');
+                });
+            }
+
+            document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
+
+    
+
+            // Function to convert base64 data to a Blob
+            function b64toBlob(b64Data, contentType='', sliceSize=512) {
+                const byteCharacters = atob(b64Data);
+                const byteArrays = [];
+
+                for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                    const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+                    const byteNumbers = new Array(slice.length);
+                    for (let i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
+                    }
+
+                    const byteArray = new Uint8Array(byteNumbers);
+                    byteArrays.push(byteArray);
+                }
+
+                const blob = new Blob(byteArrays, {type: contentType});
+                return blob;
+            }
+        </script>
+      
+        <script>
+           
+
+        var canvas = document.getElementById('img_seg');
+        var canvasSeg = document.getElementById('img_res');
+        var ctx = canvas.getContext('2d');
+        var ctxSeg = canvasSeg.getContext('2d');
+        var img = new Image();
+        var rectangles = [];
+        var isDown = false;
+        var startX;
+        var startY;
+        var images = [];
+        var currentImageIndex = 0;
+        var images_ready = [];
+        var image_b64_ready = undefined
+        var sessionIdentifier = Math.random().toString(36).substring(7);
+        //add box-sam- to the session identifier
+        sessionIdentifier = 'sam-click-' + sessionIdentifier;
+
+
+        var data_array = [];
+
+        var inputLabels = [];
+        var inputPoints = [];
+
+        var sendingAgain = false;
+
+
+         // Initialize the label with a default value
+        var label = 0;
+
+
+
+        
+
+        // Add an event listener to the canvas
+        document.getElementById('img_seg').addEventListener('click', function(event) {
+            if (label != null) {
+                let canvas = document.getElementById('img_seg');
+
+                // Add the label to the inputLabels array
+                inputLabels.push(label);
+                //convert input x and y to the original image size
+                let x = event.clientX - canvas.offsetLeft;
+                let y = event.clientY - canvas.offsetTop;
+                let x_ratio = img.width / canvas.width;
+                let y_ratio = img.height / canvas.height;
+
+                x = Math.round(x * x_ratio);
+                y = Math.round(y * y_ratio);
+                
+                // Add the point to the inputPoints array
+                inputPoints.push([x, y]);
+
+                // Draw a circle on the canvas to show the point
+                let x_point = event.clientX - canvas.offsetLeft;
+                let y_point = event.clientY - canvas.offsetTop;
+                let ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                ctx.arc(x_point, y_point, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = label === 0 ? 'red' : 'blue';
+                ctx.fill();
+            }
+        });
+
+        document.getElementById('generateButton').addEventListener('click', function() {
+        // Show the loading animation
+        document.getElementById('loading').style.display = 'block';
+
+       
+        let dataUrl = images[currentImageIndex];
+        // Remove the "data:image/png;base64," part of the data URL
+        let base64Image = dataUrl.split(',')[1];
+
+
+
+
+        // Create a JSON object with the base64 image, input labels, and input points
+        var jsonData = {
+            file: base64Image,
+            fileName: fileNames[currentImageIndex],
+            folderName: folderName,
+            again: sendingAgain,
+            input_labels: inputLabels,
+            input_points: inputPoints,
+            sessionIdentifier: sessionIdentifier
+            
+        };
+
+        // Send a POST request to the Flask server
+        fetch('http://127.0.0.1:5000/predict/prompt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(jsonData)  // send the JSON data
+        })
+        .then(response => response.json())  // parse the response as JSON
+        .then(data => {
+            // The image is returned as a base64 string in the 'image' property
+            var imageBase64 = 'data:image/png;base64,' + data.image;
+
+            // Create a new Image object
+            var img = new Image();
+            img.onload = function() {
+                // Draw the image on the img_res canvas when it's loaded
+                var canvas = document.getElementById('img_res');
+                var ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                //resize image to fit the canvas
+                var maxWidth = 500; // Max width for the image
+                var ratio = 0;  // Used for aspect ratio
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                
+                image_b64_ready = img
+
+                // Hide the loading animation
+                document.getElementById('loading').style.display = 'none';
+            };
+            img.src = imageBase64;
+        })
+        .catch(error => {
+            console.error(error);
+
+            // Hide the loading animation
+            document.getElementById('loading').style.display = 'none';
+            });
+        if (sendingAgain==false){ 
+            sendingAgain = true;
+        }
+            
+        });
+
+
+              
+
+        
+        async function handleImage(e) {
+            sendingAgain = false;
+
+            folderName = document.getElementById('folderName').value;
+
+            if (folderName === '') {
+                alert('Please enter a folder name');
+                return;
+            }
+
+            try {
+                // Fetch the image names from the server 
+                const response = await fetch('http://127.0.0.1:5000/image/list?folderName=' + folderName, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+
+                // The image names are returned in the 'images' property
+                fileNames = data.images;
+
+                //if 400, alert that the name of the folder is incorrect or do not exist
+                if (response.status === 400) {
+                    alert('The folder name is incorrect or does not exist');
+                    return;
+                }
+
+                // Fetch each image from the server and push them to the images array
+                for (let i = 0; i < fileNames.length; i++) {
+                    const imageResponse = await fetch('http://127.0.0.1:5000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const imageData = await imageResponse.json();
+                    // The image is returned as a base64 string in the 'image' property
+                    images.push('data:image/png;base64,' + imageData.image);
+                    if (i == 0) {
+                        loadImage();
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+            function loadImage() {
+                img.onload = function() {
+                    var maxWidth = 500; // Max width for the image
+                    var ratio = 0;  // Used for aspect ratio
+
+                    // Check if the current width is larger than the max
+                    if(img.width > maxWidth){
+                        ratio = maxWidth / img.width;   // get ratio for scaling image
+                        canvas.width = maxWidth;
+                        canvas.height = img.height * ratio;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        // draw second canvas, which is the same size as the first one
+                        
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0, img.width, img.height);
+                    }
+                    canvasSeg.width = canvas.width;
+                    canvasSeg.height = canvas.height;
+                    // fill black 
+                    ctxSeg.fillStyle = 'black';
+                    ctxSeg.fillRect(0, 0, canvasSeg.width, canvasSeg.height);
+                        
+                }
+                img.src = images[currentImageIndex];
+            }
+
+        document.getElementById('imageLoader').addEventListener('click', handleImage, false);
+
+
+        document.getElementById('pushButton').addEventListener('click', function() {
+            var canvas = document.getElementById('img_res'); 
+            // var dataUrl = canvas.toDataURL();
+            sendingAgain = false;
+
+            if (inputLabels.length == 0) {
+                alert('Please generate the mask before moving to the next image');
+                return;
+            }
+
+            inputLabels = [];
+            inputPoints = [];
+
+            var canvas = document.getElementById('img_res'); 
+            if (image_b64_ready === undefined) {
+                alert('Please generate the mask before moving to the next image');
+                return;
+            }
+            images_ready.push(image_b64_ready);
+            image_b64_ready = undefined;
+
+            var data = {
+                imageWidth: img.width,
+                imageHeight: img.height,
+                rectangles: rectangles
+            };
+            rectangles = [];
+            data_array.push(data);
+            currentImageIndex++;
+            if (currentImageIndex < images.length) {
+                loadImage();
+            }else{
+                //erase the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctxSeg.clearRect(0, 0, canvasSeg.width, canvasSeg.height);
+                //alert segmentation is over 
+                alert('Segmentation is over');
+                zipAndDownload();
+                images_ready = [];
+                currentImageIndex = 0;
+                fileNames = [];
+                data_array = [];
+
+            }
+        });
+
+
+        function updateSelectedButton(button) {
+            // Remove the border from the previously selected button
+            if (selectedButton) {
+                selectedButton.style.border = 'none';
+            }
+
+            // Add a border to the newly selected button
+            button.style.border = '3px solid green';
+
+            // Update the selected button
+            selectedButton = button;
+        }
+
+        // Initialize the selected button
+        var selectedButton = null;
+
+        // Add event listeners to the buttons
+        document.getElementById('redButton').addEventListener('click', function() {
+            label = 0;
+            updateSelectedButton(this);
+        });
+        document.getElementById('blueButton').addEventListener('click', function() {
+            label = 1;
+            updateSelectedButton(this);
+        });
+
+
+
+
+        //activate blue button
+        document.getElementById('blueButton').click();
+
+        // Add an event listener to the reset button
+        document.getElementById('resetButton').addEventListener('click', function() {
+            // Clear the inputLabels and inputPoints arrays
+            inputLabels = [];
+            inputPoints = [];
+
+            // Clear the canvas
+            let canvas = document.getElementById('img_seg');
+            let ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Reset the selected button
+            if (selectedButton) {
+                selectedButton.style.border = 'none';
+                selectedButton = null;
+            }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        });
+        </script>
+
+    </div>
+</body>
+</html>
+
