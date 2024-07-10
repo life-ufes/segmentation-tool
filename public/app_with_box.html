@@ -152,10 +152,10 @@
         <div style="display: flex;">
             <div>
                 <input type="button" id="imageLoader" name="imageLoader" multiple style="display: none;"/>
-                <label for="imageLoader" class="custom-file-upload">
+                <label for="imageLoader" class="custom-file-upload"> 
                     Select image folder
                 </label>
-                <input type="text" id="folderName" name="folderName"/> 
+                <input type="text" id="folderName" name="folderName" list="folderList" placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
 
                     <!-- CANVAS -->
                     <div class="row">
@@ -191,6 +191,13 @@
            
             
         </div>
+
+        <div style="margin: 20px 0;">
+            <label for="imageProgress">Progress:</label>
+            <progress id="imageProgress" value="0" max="100"></progress>
+            <span id="progressInfo">0/n</span> <!-- Add this line -->
+        </div>
+        
         <div id="selection_buttons" class="row" >
             <div class="col">
             <h4>Select the color that represents the mask</h4>
@@ -209,8 +216,8 @@
             <div class="col">
                 <div class="row">   
                 <button class="col button" id="generateButton">Generate Mask</button>
-                <button class="col button" id="resetButton">Reset</button>
-                <button class="col button" id="pushButton">Next</button>
+                <!-- <button class="col button" id="resetButton">Reset</button> -->
+                <button class="col button" id="pushButton">Next ►</button>
                 </div>
             </div>  
         </div>
@@ -473,6 +480,13 @@
         });
        
               
+              
+        function updateProgress(progress) {
+            // Update the progress bar, value will be progress/images.lenght on int 
+            document.getElementById('imageProgress').value = progress/images.length * 100
+            document.getElementById('progressInfo').textContent = progress + '/' + images.length;
+        }
+
 
         
         async function handleImage(e) {
@@ -520,6 +534,8 @@
                         loadImage();
                     }
                 }
+            updateProgress(0);
+
             } catch (error) {
                 console.error(error);
             }
@@ -575,6 +591,8 @@
             rectangles = [];
             currentImageIndex++;
             sendingAgain = false;
+            updateProgress(currentImageIndex);
+
             if (currentImageIndex < images.length) {
                 loadImage();
             }else{
@@ -618,7 +636,23 @@
             updateSelectedButton(this);
         });
 
+        document.addEventListener('DOMContentLoaded', async function() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/data/list');
+                    const data = await response.json();
+                    const folderList = document.getElementById('folderList');
 
+                    // Add the fetched folder list to the datalist
+                    data.folders.forEach(function(folder) {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        folderList.appendChild(option);
+                    });
+                
+                } catch (error) {
+                    console.error('Error fetching folder list:', error);
+                }
+            });
 
 
         //activate blue button

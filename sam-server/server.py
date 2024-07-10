@@ -407,16 +407,16 @@ def predict():
     file = request.files['file'].read()  # get the file from the request
     image = Image.open(io.BytesIO(file))  # open the image
     image_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    #save image to disk
+    # save image to disk
     cv2.imwrite('image.jpg', image_cv2)
 
     image_masked = generate_image(image_cv2)
-    #save masked image to disk
+    # save masked image to disk
     cv2.imwrite('image_masked.jpg', image_masked)
     
     image_masked = Image.fromarray(image_masked)
 
-    #send image as response to the client in json format
+    # send image as response to the client in json format
     image = io.BytesIO()
     image_masked.save(image, format='PNG')
     image.seek(0)
@@ -446,7 +446,7 @@ def process_folder():
         # Check if folder is empty
         if len(list_of_files) == 0:
             return jsonify({'error': 'Folder is empty'}), 400
-        
+       
         for file in list_of_files:
             image = cv2.imread(os.path.join(folder_path, file))
             # if image size is greater than 1920 x 1080, resize to 1920 x 1080 and save (the model can't handle much big images)
@@ -463,7 +463,8 @@ def process_folder():
             original_size = predictor.original_size
             input_size = predictor.input_size
             file = file.split('.')[0]
-            predictor_obj = {'embedd': embedd, 'original_size': original_size, 'input_size': input_size}
+            predictor_obj = {'embedd': embedd, 'original_size': original_size,
+                             'input_size': input_size}
             with open(f'{folder_path}/{file}.pkl', 'wb') as f:
                 pkl.dump(predictor_obj, f)
     except Exception as e:
@@ -472,7 +473,11 @@ def process_folder():
     return jsonify({'message': 'Embeddings generated and serialized successfully'}), 200
 
 
-
+# list the folders at images folder
+@app.route('/data/list', methods=['GET'])
+def list_folders():
+    list_of_folders = os.listdir(MAIN_IMAGE_FOLDER)
+    return jsonify({'folders': list_of_folders}), 200
 
 
 

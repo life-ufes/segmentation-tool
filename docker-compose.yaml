@@ -20,6 +20,7 @@ services:
     ports:
       - 5000:5000
     shm_size: 2g
+    runtime: nvidia
 
 
     

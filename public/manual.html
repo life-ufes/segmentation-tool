@@ -14,6 +14,16 @@
         margin: 0 auto;
     }
 
+
+    #resetButton {
+        background-color: #008CBA;
+    }
+
+    #resetButton:hover {
+        background-color: #007a9b;
+    }
+
+
     body {
         display: flex;
         justify-content: center;
@@ -114,7 +124,7 @@
                 <label for="imageLoader" class="custom-file-upload">
                     Select images folder
                 </label>
-                <input type="text" id="folderName" name="folderName"/> 
+                <input type="text" id="folderName" name="folderName" list="folderList" placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
 
                  <!-- CANVAS -->
                  <div class="row">
@@ -139,14 +149,20 @@
                 
             </div>
 
-            <div>
+
+            <div class="col">
                 <div class="row">   
-                <button class="col button" id="resetButton">Reset</button>
-                <button class="col button" id="pushButton">Next</button>
+                <button class="col button" id="resetButton">Reset ↺</button>
+                <button class="col button" id="pushButton">Next ►</button>
                 <button class="col button button-save" id="downloadImages">Download Images</button> 
                 </div>
             </div>  
             
+        </div>
+        <div style="margin: 20px 0;">
+            <label for="imageProgress">Progress:</label>
+            <progress id="imageProgress" value="0" max="100"></progress>
+            <span id="progressInfo">0/n</span> <!-- Add this line -->
         </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
@@ -305,10 +321,22 @@
         var data_array = [];
 
         ferramentaMaoLivre(canvas, ctx, ctxSeg);
+
+
+              
+        function updateProgress(progress) {
+            // Update the progress bar, value will be progress/images.lenght on int 
+            document.getElementById('imageProgress').value = progress/images.length * 100
+            document.getElementById('progressInfo').textContent = progress + '/' + images.length;
+        }
+
+
         
 
         async function handleImage(e) {
             sendingAgain = false;
+
+
 
             folderName = document.getElementById('folderName').value;
 
@@ -351,6 +379,7 @@
                         loadImage();
                     }
                 }
+                updateProgress(0);
             } catch (error) {
                 console.error(error);
             }
@@ -447,6 +476,7 @@
                 
             }
 
+
             originalImage = originalImage.split(',')[1];
 
 
@@ -526,6 +556,8 @@
                 // location.reload();
 
             }
+            updateProgress(currentImageIndex);
+
         }
 
         function saveToFile() {
@@ -548,6 +580,24 @@
             loadImage();
 
         }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/data/list');
+                    const data = await response.json();
+                    const folderList = document.getElementById('folderList');
+
+                    // Add the fetched folder list to the datalist
+                    data.folders.forEach(function(folder) {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        folderList.appendChild(option);
+                    });
+                
+                } catch (error) {
+                    console.error('Error fetching folder list:', error);
+                }
+            });
 
         document.getElementById('imageLoader').addEventListener('click', handleImage, false);
         // canvas.addEventListener('mousedown', handleMouseDown, false);

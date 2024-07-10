@@ -113,7 +113,6 @@
                 <a href="/sam-click">
                     <button class="button">Dots with SAM Segmentation</button>
                 </a>
-                <input id="samFolder" type="text" placeholder="Folder name for SAM" />
             </div>
         </div>
 
@@ -123,43 +122,60 @@
                 <a href="/sam-box">
                     <button class="button">BOX with SAM Segmentation</button>
                 </a>
-                <input id="samFolderDot" type="text" placeholder="Folder name for SAM" />
-            </div>
-        </div>
+            </a>
+                
+            </div>               
 
+        </div>
 
         <div class="row"></div>
             <!-- Folder Pre-Processing -->
             <div class="col">
             <button id="preProcessFolderButton" class="button">Folder Pre-Processing</button>
-            <input id="preProcessFolder" type="text" placeholder="Folder name for Pre-Processing" />
+            <input type="text" id="folderName" name="folderName" list="folderList" placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
             <div id="loader" class="loader" style="display: none;"></div> <!-- Add the loader element -->
             </div>
         </div>
-    </div>
-    <script>
-        //add event listener to the button preProcessFolder
-        document.querySelector('#preProcessFolderButton').addEventListener('click', function() {
-            var folderName = document.getElementById('preProcessFolder').value;
-            console.log("folderName: " + folderName);
-            // do a fetch to http://127.0.0.1:5000/process/folder?folderName=folderName
+        </div>
+        <script>
+           document.addEventListener('DOMContentLoaded', async function() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/data/list');
+                    const data = await response.json();
+                    const folderList = document.getElementById('folderList');
 
-            // Show the loader
-            document.getElementById('loader').style.display = 'block';
-
-            fetch('http://127.0.0.1:5000/process/folder?folderName=' + folderName)
-            .then(response => response.json())
-            .then(data => {
-                // Hide the loader after the fetch is complete
-                document.getElementById('loader').style.display = 'none';
-            }).catch((error) => {
-                console.error('Error:', error);
-                // Hide the loader if there is an error
-                document.getElementById('loader').style.display = 'none';
-
-                alert('Error: ' + error);
+                    // Add the fetched folder list to the datalist
+                    data.folders.forEach(function(folder) {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        folderList.appendChild(option);
+                    });
+                
+                } catch (error) {
+                    console.error('Error fetching folder list:', error);
+                }
             });
-        });
+
+    document.querySelector('#preProcessFolderButton').addEventListener('click', async function() {
+        var folderName = document.getElementById('preProcessFolder').value;
+        console.log("folderName: " + folderName);
+
+        // Show the loader
+        document.getElementById('loader').style.display = 'block';
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/process/folder?folderName=' + folderName);
+            const data = await response.json();
+            // Hide the loader after the fetch is complete
+            document.getElementById('loader').style.display = 'none';
+        } catch (error) {
+            console.error('Error:', error);
+            // Hide the loader if there is an error
+            document.getElementById('loader').style.display = 'none';
+
+            alert('Error: ' + error);
+        }
+    });
     </script>
 </body>
 </html>
