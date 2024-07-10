@@ -43,12 +43,12 @@ CORS(app)  # enable CORS on the app
 
 
 CHECKPOINT_PATH = "./sam_vit_h_4b8939.pth"
-CHECKPOINT_PATH = "./sam_vit_b_01ec64.pth"
+#CHECKPOINT_PATH = "./sam_vit_b_01ec64.pth"
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {DEVICE}")
 MODEL_TYPE = "vit_h"
-MODEL_TYPE = "vit_b"
+#MODEL_TYPE = "vit_b"
 
 model = sam_model_registry[MODEL_TYPE](checkpoint=CHECKPOINT_PATH)
 model.to(device=DEVICE)
@@ -450,11 +450,11 @@ def process_folder():
         for file in list_of_files:
             image = cv2.imread(os.path.join(folder_path, file))
             # if image size is greater than 1920 x 1080, resize to 1920 x 1080 and save (the model can't handle much big images)
-            if image.shape[0] > 1080 or image.shape[1] > 1920:
-                image = cv2.resize(image, (1920, 1080))
-                # add "resized" to the file name
-                file = file.split('.')[0] + '_resized.jpg'
-                cv2.imwrite(os.path.join(folder_path, file), image)
+#            if image.shape[0] > 1080 or image.shape[1] > 1920:
+#                image = cv2.resize(image, (1920, 1080))
+#                # add "resized" to the file name
+#                file = file.split('.')[0] + '_resized.jpg'
+#                cv2.imwrite(os.path.join(folder_path, file), image)
 
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             # Assuming predictor is defined elsewhere and set up correctly
