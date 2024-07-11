@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   app-web:
     image: node:14
@@ -9,7 +9,6 @@ services:
     ports:
       - 4002:4002
 
-    
   app-api:
     build: ./sam-server/
     volumes:
@@ -20,7 +19,4 @@ services:
     ports:
       - 5000:5000
     shm_size: 2g
-    runtime: nvidia
-
-
-    
+    # runtime: nvidia
