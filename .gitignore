@@ -170,3 +170,4 @@ sam-server/sessions
 *.jpg
 *.jpeg
 *.pkl
+!assets/*.png
