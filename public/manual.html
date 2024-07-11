@@ -326,8 +326,8 @@
               
         function updateProgress(progress) {
             // Update the progress bar, value will be progress/images.lenght on int 
-            document.getElementById('imageProgress').value = progress/images.length * 100
-            document.getElementById('progressInfo').textContent = progress + '/' + images.length;
+            document.getElementById('imageProgress').value = progress/fileNames.length * 100
+            document.getElementById('progressInfo').textContent = progress + '/' + fileNames.length;
         }
 
 
@@ -364,6 +364,8 @@
                     return;
                 }
 
+                updateProgress(0);
+
                 // Fetch each image from the server and push them to the images array
                 for (let i = 0; i < fileNames.length; i++) {
                     const imageResponse = await fetch('http://127.0.0.1:5000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
@@ -379,7 +381,7 @@
                         loadImage();
                     }
                 }
-                updateProgress(0);
+                
             } catch (error) {
                 console.error(error);
             }
