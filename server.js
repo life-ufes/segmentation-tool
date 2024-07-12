@@ -14,13 +14,8 @@ app.get('/manual', function(req, res) {
     res.sendFile(path.join(__dirname, 'public', 'manual.html'));
 });
 
-
-app.get('/sam-click', function(req, res) {
-    res.sendFile(path.join(__dirname, 'public', 'app_with_SAM.html'));
-});
-
-app.get('/sam-box', function(req, res) {
-    res.sendFile(path.join(__dirname, 'public', 'app_with_box.html'));
+app.get('/sam', function(req, res) {
+    res.sendFile(path.join(__dirname, 'public', 'app_sam.html'));
 });
 
 const port = process.env.PORT || 4002;

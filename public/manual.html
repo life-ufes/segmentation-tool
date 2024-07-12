@@ -14,16 +14,6 @@
         margin: 0 auto;
     }
 
-
-    #resetButton {
-        background-color: #008CBA;
-    }
-
-    #resetButton:hover {
-        background-color: #007a9b;
-    }
-
-
     body {
         display: flex;
         justify-content: center;
@@ -72,6 +62,43 @@
         font-size: 16px;
     }
 
+    .colorButtonSelection {
+            margin: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s;
+            box-sizing: border-box; /* Add this line to include the border in the button's total width and height */
+        }
+
+    .colorButtonSelection:active {
+        transform: scale(0.9);
+    }
+
+  
+
+    #resetButton {
+        background-color: #008CBA;
+    }
+
+    #resetButton:hover {
+        background-color: #007a9b;
+    }
+
+    #pushButton {
+        background-color: #008CBA;
+    }
+
+    #pushButton:hover {
+        background-color: #007a9b;
+    }
+
+
+    .colorSelection {
+        display: flex;
+        align-items: center;
+    }
 
     
 
@@ -94,12 +121,24 @@
         background-color: #007a9b;
     }
 
+    .button-selection{
+        background-color: #166c88   ;
+    }
+
+    .button-selection-pressed {
+        background-color: #123b49;
+    }
+
+    .button-selection:hover {
+        background-color: #123b49;
+    }
+
     .custom-file-upload {
         padding: 10px;
         border: 1px solid #ccc;
         display: inline-block;
         cursor: pointer;
-        background-color: #834b3dbe; /* Green background */
+        background-color: #007a9b; /* Green background */
         color: white; /* White text */
         font-weight: bold;
         text-align: center;
@@ -108,7 +147,22 @@
     }
 
     .custom-file-upload:hover {
-        background-color: #45a049; /* Darker green on hover */
+        background-color: #123b49; /* Darker green on hover */
+    }
+     /* Add this to your existing CSS */
+     .loader {
+        border: 4px solid #f3f3f3; /* Light grey */
+        border-top: 4px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 12px;
+        height: 12px;
+        animation: spin 2s linear infinite;
+    }
+  
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
 </style>
@@ -145,25 +199,27 @@
                     </div>
 
                 </div>
-        <h3>To segment, click and drag the mouse over the image</h3>
+            <h3>To segment, click and drag the mouse over the image</h3>
                 
+
+            <div style="margin: 20px 0;">
+                <label for="imageProgress">Progress:</label>
+                <progress id="imageProgress" value="0" max="100"></progress>
+                <span id="progressInfo">0/n</span> <!-- Add this line -->
+    
             </div>
-
-
-            <div class="col">
-                <div class="row">   
-                <button class="col button" id="resetButton">Reset ↺</button>
-                <button class="col button" id="pushButton">Next ►</button>
-                <button class="col button button-save" id="downloadImages">Download Images</button> 
+            
+            <div class="row">
+                <div class="col"></div>
+                <button class=" button" id="resetButton">Reset ↺</button>
+                <button class=" button" id="pushButton">Next ►</button>
+                <!-- <button class=" button button-save" id="downloadImages">Download Images</button>  -->
                 </div>
             </div>  
             
         </div>
-        <div style="margin: 20px 0;">
-            <label for="imageProgress">Progress:</label>
-            <progress id="imageProgress" value="0" max="100"></progress>
-            <span id="progressInfo">0/n</span> <!-- Add this line -->
-        </div>
+       
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
 

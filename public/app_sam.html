@@ -62,14 +62,6 @@
         font-size: 16px;
     }
 
-    #resetButton {
-        background-color: #008CBA;
-    }
-
-    #resetButton:hover {
-        background-color: #007a9b;
-    }
-
     .colorButtonSelection {
             margin: 10px;
             padding: 10px;
@@ -84,13 +76,24 @@
         transform: scale(0.9);
     }
 
-    #redButton {
-        background-color: red;
+  
+
+    #resetButton {
+        background-color: #008CBA;
     }
 
-    #blueButton {
-        background-color: blue;
+    #resetButton:hover {
+        background-color: #007a9b;
     }
+
+    #pushButton {
+        background-color: #008CBA;
+    }
+
+    #pushButton:hover {
+        background-color: #007a9b;
+    }
+
 
     .colorSelection {
         display: flex;
@@ -118,12 +121,24 @@
         background-color: #007a9b;
     }
 
+    .button-selection{
+        background-color: #166c88   ;
+    }
+
+    .button-selection-pressed {
+        background-color: #123b49;
+    }
+
+    .button-selection:hover {
+        background-color: #123b49;
+    }
+
     .custom-file-upload {
         padding: 10px;
         border: 1px solid #ccc;
         display: inline-block;
         cursor: pointer;
-        background-color: #834b3dbe; /* Green background */
+        background-color: #007a9b; /* Green background */
         color: white; /* White text */
         font-weight: bold;
         text-align: center;
@@ -132,7 +147,7 @@
     }
 
     .custom-file-upload:hover {
-        background-color: #45a049; /* Darker green on hover */
+        background-color: #123b49; /* Darker green on hover */
     }
      /* Add this to your existing CSS */
      .loader {
@@ -156,14 +171,15 @@
 <body>
     <div display="flex" justify-content="center" align-items="center">
         <h1>Automatic Image Segmentation Tool</h1>
-        <h2>Select one or more images to segment, use the points to indicate the areas to be segmented</h2>
+        <h2>Select one or more images to segment, use the points to indicate what should be segmented</h2>
         <div style="display: flex;">
             <div>
                 <input type="button" id="imageLoader" name="imageLoader" multiple style="display: none;"/>
-                <label for="imageLoader" class="custom-file-upload">
-                    Select images folder
+                <label for="imageLoader" class="custom-file-upload"> 
+                    Select image folder
                 </label>
                 <input type="text" id="folderName" name="folderName" list="folderList" placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
+
                     <!-- CANVAS -->
                     <div class="row">
                     <div class="col">                            
@@ -183,9 +199,8 @@
                      
 
                         <div id="loading" class="loader" style="display: none;"></div>
-             
                     </div>
-           
+             
 
                     <div class="col">
                         <button class="col button button-save" id="downloadImages">Download Images</button> 
@@ -204,33 +219,24 @@
             <label for="imageProgress">Progress:</label>
             <progress id="imageProgress" value="0" max="100"></progress>
             <span id="progressInfo">0/n</span> <!-- Add this line -->
+            <button class="button" id="resetButton" style="display: none; margin: 0;">Reset ↺</button>
+
         </div>
         
- 
         <div id="selection_buttons" class="row" >
             <div class="col">
-            <h4>Select the color that represents the mask</h4>
-
-                <div class="colorSelection">
-                    <button id="blueButton" class="colorButtonSelection"></button>
-                    <span>Part of the mask</span> 
-                </div>
-                <div class="colorSelection">
-                <button id="redButton" class="colorButtonSelection"></button>
-                <span>Not part of the mask</span> 
-                </div>
+                <button class="button button-selection button-selection-pressed" id="modeBox" >Box</button>
+                <button class="button button-selection" id="modeClick">Click</button>
             </div>
 
-
             <div class="col">
-                <div class="row">   
-                <button class="col button" id="generateButton">Generate Mask</button>
-                <button class="col button" id="resetButton">Reset ↺</button>
-                <button class="col button" id="pushButton">Next ►</button>
+                <button class="button" id="generateButton">Generate Mask</button>
+                <button class="button" id="pushButton">Next ►</button>
                 </div>
             </div>  
+       
         </div>
-
+        
 
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
@@ -243,7 +249,6 @@
                         
             // Create a new zip file
             var zip = new JSZip();
-
 
             function zipAndDownload(){
                 
@@ -278,7 +283,9 @@
                 });
             }
 
-            document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
+
+
+           
 
     
 
@@ -305,6 +312,8 @@
         </script>
       
         <script>
+
+        var mode = 'box'
            
 
         var canvas = document.getElementById('img_seg');
@@ -322,138 +331,282 @@
         var image_b64_ready = undefined
         var sessionIdentifier = Math.random().toString(36).substring(7);
         //add box-sam- to the session identifier
-        sessionIdentifier = 'sam-click-' + sessionIdentifier;
+        sessionIdentifier = 'sam-' + sessionIdentifier;
+
+        var timer = null;
+        
 
 
-        var data_array = [];
+        var folderName = '';
 
+        var box = [];
         var inputLabels = [];
         var inputPoints = [];
 
+
         var sendingAgain = false;
 
+        function click_mode(event){ 
+            let canvas = document.getElementById('img_seg');
 
-         // Initialize the label with a default value
-        var label = 0;
-        
-        var time = null
+            // Add the label to the inputLabels array
+            inputLabels.push(1);
+            //convert input x and y to the original image size
+            let x = event.clientX - canvas.offsetLeft;
+            let y = event.clientY - canvas.offsetTop;
+            let x_ratio = img.width / canvas.width;
+            let y_ratio = img.height / canvas.height;
 
-
-        
-
-        // Add an event listener to the canvas
-        document.getElementById('img_seg').addEventListener('click', function(event) {
-            if (label != null) {
-                let canvas = document.getElementById('img_seg');
-
-                // Add the label to the inputLabels array
-                inputLabels.push(label);
-                //convert input x and y to the original image size
-                let x = event.clientX - canvas.offsetLeft;
-                let y = event.clientY - canvas.offsetTop;
-                let x_ratio = img.width / canvas.width;
-                let y_ratio = img.height / canvas.height;
-
-                x = Math.round(x * x_ratio);
-                y = Math.round(y * y_ratio);
-                
-                // Add the point to the inputPoints array
-                inputPoints.push([x, y]);
-
-                // Draw a circle on the canvas to show the point
-                let x_point = event.clientX - canvas.offsetLeft;
-                let y_point = event.clientY - canvas.offsetTop;
-                let ctx = canvas.getContext('2d');
-                ctx.beginPath();
-                ctx.arc(x_point, y_point, 5, 0, 2 * Math.PI);
-                ctx.fillStyle = label === 0 ? 'red' : 'blue';
-                ctx.fill();
-            }
-        });
-
-        document.getElementById('generateButton').addEventListener('click', function() {
-        // Show the loading animation
-        document.getElementById('loading').style.display = 'block';
-
-       
-        let dataUrl = images[currentImageIndex];
-        // Remove the "data:image/png;base64," part of the data URL
-        let base64Image = dataUrl.split(',')[1];
-
-
-
-
-        // Create a JSON object with the base64 image, input labels, and input points
-        var jsonData = {
-            file: base64Image,
-            fileName: fileNames[currentImageIndex],
-            folderName: folderName,
-            again: sendingAgain,
-            input_labels: inputLabels,
-            input_points: inputPoints,
-            sessionIdentifier: sessionIdentifier
+            x = Math.round(x * x_ratio);
+            y = Math.round(y * y_ratio);
             
-        };
+            // Add the point to the inputPoints array
+            inputPoints.push([x, y]);
 
-        // Send a POST request to the Flask server
-        fetch('http://127.0.0.1:5000/predict/prompt', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(jsonData)  // send the JSON data
-        })
-        .then(response => response.json())  // parse the response as JSON
-        .then(data => {
-            // The image is returned as a base64 string in the 'image' property
-            var imageBase64 = 'data:image/png;base64,' + data.image;
+            // Draw a circle on the canvas to show the point
+            let x_point = event.clientX - canvas.offsetLeft;
+            let y_point = event.clientY - canvas.offsetTop;
+            let ctx = canvas.getContext('2d');
+            ctx.beginPath();
+            ctx.arc(x_point, y_point, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+        
+        }
 
-            // Create a new Image object
-            var img = new Image();
-            img.onload = function() {
-                // Draw the image on the img_res canvas when it's loaded
-                var canvas = document.getElementById('img_res');
-                var ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                //resize image to fit the canvas
-                var maxWidth = 500; // Max width for the image
-                var ratio = 0;  // Used for aspect ratio
+        
+        let start = null;
+        let end = null;
 
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        function box_mode_down(event){
+            start = [event.clientX, event.clientY];
+        }
 
+        function box_mode_move(event){
+            if (start != null) {
+                end = [event.clientX, event.clientY];
+                drawBox();
+            }
+     
+         }
+
+         function box_mouse_up(event){ 
+        if (start  != null && end != null) {
+                let canvas = document.getElementById('img_seg');
+                let x = start[0] - canvas.offsetLeft;
+                let y = start[1] - canvas.offsetTop;
+                let width = end[0] - start[0];
+                let height = end[1] - start[1];
+
+                //convert to the original image size
+                x = x * img.width / canvas.width;
+                y = y * img.height / canvas.height;
+                width = width * img.width / canvas.width;
+                height = height * img.height / canvas.height;
+
+
+                box = [x, y, x + width, y + height];
+
+                // Reset start and end
+                start = null;
+                end = null;
+
+                document.getElementById('loading').style.display = 'block';
+                let dataUrl = images[currentImageIndex];
+                let base64Image = dataUrl.split(',')[1];
+
+
+                let jsonData = {
+                    file: base64Image,
+                    fileName: fileNames[currentImageIndex],
+                    folderName: folderName,
+                    box: box,
+                    again: sendingAgain,
+                    sessionIdentifier: sessionIdentifier
+
+                };
+                do_the_fetch_box(jsonData);
+            }
+         }
+
+     
+
+        function do_the_fetch_box(jsonData){
+            let link = 'http://127.0.0.1:5000/predict/box'
+            if (mode === 'click'){ 
+                link = 'http://127.0.0.1:5000/predict/prompt'
+            }
+
+            // Send a POST request to the Flask server
+            fetch(link, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(jsonData)  // send the JSON data
+            })
+            .then(response => response.json())  // parse the response as JSON
+            .then(data => {
+                // The image is returned as a base64 string in the 'image' property
+                var imageBase64 = 'data:image/png;base64,' + data.image;
+
+                // Create a new Image object
+                var img = new Image();
+                img.onload = function() {
+                    // Draw the image on the img_res canvas when it's loaded
+                    var canvas = document.getElementById('img_res');
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Hide the loading animation
+                    document.getElementById('loading').style.display = 'none';
+                    image_b64_ready = img
                 
-                image_b64_ready = img
+                };
+                img.src = imageBase64;
+            })
+            .catch(error => {
+                console.error(error);
 
                 // Hide the loading animation
                 document.getElementById('loading').style.display = 'none';
-            };
-            img.src = imageBase64;
-        })
-        .catch(error => {
-            console.error(error);
-
-            // Hide the loading animation
-            document.getElementById('loading').style.display = 'none';
-            });
-        if (sendingAgain==false){ 
-            sendingAgain = true;
+                });
+            if (sendingAgain==false){
+                sendingAgain = true;
+            }
         }
-            
+
+
+        function drawBox() {
+            // Clear the canvas
+            let canvas = document.getElementById('img_seg');
+            let ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            // Draw a rectangle on the canvas to show the box
+            let x = start[0] - canvas.offsetLeft;
+            let y = start[1] - canvas.offsetTop;
+            let width = end[0] - start[0];
+            let height = end[1] - start[1];
+            ctx.beginPath();
+            ctx.rect(x, y, width, height);
+            ctx.strokeStyle = 'blue';
+            ctx.stroke();
+        }
+
+        document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
+
+        //add box listeners
+        document.getElementById('img_seg').addEventListener('mousedown', box_mode_down);
+        document.getElementById('img_seg').addEventListener('mousemove', box_mode_move);
+        document.getElementById('img_seg').addEventListener('mouseup', box_mouse_up);
+
+        document.getElementById('modeBox').addEventListener('click', function() {
+            mode = 'box';
+            document.getElementById('img_seg').classList.remove('img_seg_click');
+            document.getElementById('img_seg').classList.add('img_seg_box');
+
+            document.getElementById('modeClick').classList.remove('button-selection-pressed');
+            document.getElementById('modeBox').classList.add('button-selection-pressed');
+
+            //redraw canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            //hide reset button
+            document.getElementById('resetButton').style.display = 'none';
+
+
+
+            // add listeners to the canvas
+            canvas.addEventListener('mousedown', box_mode_down);
+            canvas.addEventListener('mousemove', box_mode_move);
+            canvas.addEventListener('mouseup', box_mouse_up);
+
+            //remove, if exists, click listeners
+            canvas.removeEventListener('click', click_mode);
+
+
         });
 
+        document.getElementById('modeClick').addEventListener('click', function() {
+            mode = 'click';
+            document.getElementById('img_seg').classList.remove('img_seg_box');
+            document.getElementById('img_seg').classList.add('img_seg_click');
 
-              
+            document.getElementById('modeBox').classList.remove('button-selection-pressed');
+            document.getElementById('modeClick').classList.add('button-selection-pressed');
+
+            // add listeners to the canvas
+            document.getElementById('img_seg').addEventListener('click', click_mode);
+
+            //redraw canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            //display reset button
+            document.getElementById('resetButton').style.display = 'inline'
+            
+
+            //remove, if exists, box listeners
+            canvas.removeEventListener('mousedown', box_mode_down);
+            canvas.removeEventListener('mousemove', box_mode_move);
+            canvas.removeEventListener('mouseup', box_mouse_up);
+
+
+        });
+
+        
+        document.getElementById('generateButton').addEventListener('click', function() {
+        // Show the loading animation
+            document.getElementById('loading').style.display = 'block';
+
+           
+        
+            var dataUrl = images[currentImageIndex];
+
+            var base64Image = dataUrl.split(',')[1];
+
+            if (mode === 'click') {
+                    var jsonData = {
+                        file: base64Image,
+                        fileName: fileNames[currentImageIndex],
+                        folderName: folderName,
+                        again: sendingAgain,
+                        input_labels: inputLabels,
+                        input_points: inputPoints,
+                        sessionIdentifier: sessionIdentifier
+                        
+                    };
+
+                }else{
+                // Create a JSON object with the base64 image, input labels, and input points
+                var jsonData = {
+                        file: base64Image,
+                        fileName: fileNames[currentImageIndex],
+                        folderName: folderName,
+                        box: box,
+                        again: sendingAgain,
+                        sessionIdentifier: sessionIdentifier
+
+                    };
+
+                }
+
+
+            do_the_fetch_box(jsonData);
+        });
+       
+          
         function updateProgress(progress) {
             // Update the progress bar, value will be progress/images.lenght on int 
             document.getElementById('imageProgress').value = progress/fileNames.length * 100
             document.getElementById('progressInfo').textContent = progress + '/' + fileNames.length;
         }
 
-
         
         async function handleImage(e) {
             sendingAgain = false;
-
 
             folderName = document.getElementById('folderName').value;
 
@@ -474,17 +627,19 @@
 
                 // The image names are returned in the 'images' property
                 fileNames = data.images;
+                console.log(fileNames);
 
                 //if 400, alert that the name of the folder is incorrect or do not exist
                 if (response.status === 400) {
                     alert('The folder name is incorrect or does not exist');
                     return;
                 }
+
                 updateProgress(0);
 
+                //start timer, it is the now datetime 
                 timer = new Date().getTime();
 
-            
                 // Fetch each image from the server and push them to the images array
                 for (let i = 0; i < fileNames.length; i++) {
                     const imageResponse = await fetch('http://127.0.0.1:5000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
@@ -501,11 +656,11 @@
                     }
                 }
 
-
             } catch (error) {
                 console.error(error);
             }
         }
+
             function loadImage() {
                 img.onload = function() {
                     var maxWidth = 500; // Max width for the image
@@ -536,20 +691,20 @@
 
         document.getElementById('imageLoader').addEventListener('click', handleImage, false);
 
-      
 
         document.getElementById('pushButton').addEventListener('click', function() {
-            var canvas = document.getElementById('img_res'); 
-            // var dataUrl = canvas.toDataURL();
-            sendingAgain = false;
-
-            if (inputLabels.length == 0) {
-                alert('Please generate the mask before moving to the next image');
+            
+            //check for each mode if the inputs are correct
+            if (mode === 'click' && inputLabels.length === 0) {
+                alert('Please select at least one point before moving to the next image');
+                return;
+            }
+            if (mode === 'box' && box.length === 0) {
+                alert('Please select a box before moving to the next image');
                 return;
             }
 
-            inputLabels = [];
-            inputPoints = [];
+
 
             var canvas = document.getElementById('img_res'); 
             if (image_b64_ready === undefined) {
@@ -558,6 +713,7 @@
             }
             images_ready.push(image_b64_ready);
             image_b64_ready = undefined;
+            
 
             var data = {
                 imageWidth: img.width,
@@ -565,14 +721,14 @@
                 rectangles: rectangles
             };
             rectangles = [];
-            data_array.push(data);
             currentImageIndex++;
-
+            sendingAgain = false;
             updateProgress(currentImageIndex);
 
             if (currentImageIndex < images.length) {
                 loadImage();
             }else{
+                
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctxSeg.clearRect(0, 0, canvasSeg.width, canvasSeg.height);
                 //alert segmentation is over 
@@ -615,22 +771,6 @@
         // Initialize the selected button
         var selectedButton = null;
 
-        // Add event listeners to the buttons
-        document.getElementById('redButton').addEventListener('click', function() {
-            label = 0;
-            updateSelectedButton(this);
-        });
-        document.getElementById('blueButton').addEventListener('click', function() {
-            label = 1;
-            updateSelectedButton(this);
-        });
-
-
-
-
-        //activate blue button
-        document.getElementById('blueButton').click();
-
         // Add an event listener to the reset button
         document.getElementById('resetButton').addEventListener('click', function() {
             // Clear the inputLabels and inputPoints arrays
@@ -650,7 +790,6 @@
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         });
 
-
         document.addEventListener('DOMContentLoaded', async function() {
                 try {
                     const response = await fetch('http://127.0.0.1:5000/data/list');
@@ -669,8 +808,10 @@
                 }
             });
 
-   
 
+       
+
+       
         </script>
 
     </div>
