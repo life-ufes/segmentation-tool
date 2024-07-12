@@ -366,6 +366,9 @@
 
                 updateProgress(0);
 
+                timer = new Date().getTime();
+                
+
                 // Fetch each image from the server and push them to the images array
                 for (let i = 0; i < fileNames.length; i++) {
                     const imageResponse = await fetch('http://127.0.0.1:5000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
@@ -554,8 +557,18 @@
                 alert('Segmentation is over');
                 zipAndDownload();
 
-                //reset page 
-                // location.reload();
+                let end_time = new Date().getTime();
+                let time = end_time - timer;
+                // turn into seconds
+                time = time / 1000; 
+                //send time to the server 
+                fetch('http://127.0.0.1:5000/data/savetimer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({time: time, sessionIdentifier: sessionIdentifier})  // send the JSON data
+                })
 
             }
             updateProgress(currentImageIndex);

@@ -479,7 +479,18 @@ def list_folders():
     list_of_folders = os.listdir(MAIN_IMAGE_FOLDER)
     return jsonify({'folders': list_of_folders}), 200
 
-
+@app.route('/data/savetimer', methods=['POST'])
+def save_timer():
+    data = request.json
+    if 'sessionIdentifier' not in data:
+        return jsonify({'error': 'No sessionIdentifier in request'}), 400
+    if 'time' not in data:
+        return jsonify({'error': 'No time in request'}), 400
+    sessionIdentifier = data['sessionIdentifier']
+    time = data['time']
+    with open(f'{SESSIONS_FOLDER}/{sessionIdentifier}/time.txt', 'w') as f:
+        f.write(str(time))
+    return jsonify({'message': 'Time saved successfully'}), 200
 
 
 @app.route('/')

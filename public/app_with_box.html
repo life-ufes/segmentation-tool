@@ -315,6 +315,8 @@
         var sessionIdentifier = Math.random().toString(36).substring(7);
         //add box-sam- to the session identifier
         sessionIdentifier = 'sam-box-' + sessionIdentifier;
+
+        var timer = null;
         
 
 
@@ -520,6 +522,10 @@
 
                 updateProgress(0);
 
+                //start timer, it is the now datetime 
+                timer = new Date().getTime();
+
+
 
                 // Fetch each image from the server and push them to the images array
                 for (let i = 0; i < fileNames.length; i++) {
@@ -602,6 +608,19 @@
                 ctxSeg.clearRect(0, 0, canvasSeg.width, canvasSeg.height);
                 //alert segmentation is over 
                 alert('Segmentation is over');
+                let end_time = new Date().getTime();
+                let time = end_time - timer;
+                // turn into seconds
+                time = time / 1000; 
+                //send time to the server 
+                fetch('http://127.0.0.1:5000/data/savetimer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({time: time, sessionIdentifier: sessionIdentifier})  // send the JSON data
+                })
+                
                 zipAndDownload();
                 images_ready = [];
                 currentImageIndex = 0;
