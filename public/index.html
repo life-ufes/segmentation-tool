@@ -88,11 +88,19 @@
         background-color: #007a9b; /* Darker green on hover */
     }
 
+    .loader {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+    }
+
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
-
 </style>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 </head>
@@ -121,53 +129,66 @@
         </div>
 
         <div class="row"></div>
-            <!-- Folder Pre-Processing -->
-            <div class="col">
+             <!-- Folder Pre-Processing -->
+             <div class="col">
             <button id="preProcessFolderButton" class="button">Folder Pre-Processing</button>
             <input type="text" id="folderName" name="folderName" list="folderList" placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
-            <div id="loader" class="loader" style="display: none;"></div> <!-- Add the loader element -->
-            </div>
+            <datalist id="folderList"></datalist> 
+            <div id="loader" class="loader" style="display: none;"></div> <!-- Ensure this matches your loader's HTML -->
+        </div>
         </div>
         </div>
         <script>
-           document.addEventListener('DOMContentLoaded', async function() {
-                try {
-                    const response = await fetch('http://127.0.0.1:5000/data/list');
-                    const data = await response.json();
-                    const folderList = document.getElementById('folderList');
-
-                    // Add the fetched folder list to the datalist
-                    data.folders.forEach(function(folder) {
-                        const option = document.createElement('option');
-                        option.value = folder;
-                        folderList.appendChild(option);
-                    });
+          document.addEventListener('DOMContentLoaded', function() {
+                const inputField = document.getElementById('folderName');
                 
+                inputField.addEventListener('click', async function() {
+                    // Check if the list is already populated to avoid refetching
+                    if(document.getElementById('folderList').options.length === 0) {
+                        try {
+                            const response = await fetch('http://127.0.0.1:5000/data/list');
+                            const data = await response.json();
+                            const folderList = document.getElementById('folderList');
+
+                            const folders = data.folders;
+
+                            folders.forEach(function(folder) {
+                                console.log(folder);
+                                const option = document.createElement('option');
+
+                                option.value = folder;
+
+                                folderList.appendChild(option);
+                            });
+
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('Error: ' + error);
+                        }
+                    }
+                });
+           });
+
+           document.querySelector('#preProcessFolderButton').addEventListener('click', async function() {
+                var folderName = document.getElementById('folderName').value;
+                console.log("folderName: " + folderName);
+
+                // Show the loader
+                document.getElementById('loader').style.display = 'block';
+
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/process/folder?folderName=' + folderName);
+                    const data = await response.json();
+                    // Hide the loader after the fetch is complete
+                    document.getElementById('loader').style.display = 'none';
                 } catch (error) {
-                    console.error('Error fetching folder list:', error);
+                    console.error('Error:', error);
+                    // Hide the loader if there is an error
+                    document.getElementById('loader').style.display = 'none';
+
+                    alert('Error: ' + error);
                 }
             });
-
-    document.querySelector('#preProcessFolderButton').addEventListener('click', async function() {
-        var folderName = document.getElementById('preProcessFolder').value;
-        console.log("folderName: " + folderName);
-
-        // Show the loader
-        document.getElementById('loader').style.display = 'block';
-
-        try {
-            const response = await fetch('http://127.0.0.1:5000/process/folder?folderName=' + folderName);
-            const data = await response.json();
-            // Hide the loader after the fetch is complete
-            document.getElementById('loader').style.display = 'none';
-        } catch (error) {
-            console.error('Error:', error);
-            // Hide the loader if there is an error
-            document.getElementById('loader').style.display = 'none';
-
-            alert('Error: ' + error);
-        }
-    });
     </script>
 </body>
 </html>
