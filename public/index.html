@@ -152,7 +152,7 @@
                     // Check if the list is already populated to avoid refetching
                     if(document.getElementById('folderList').options.length === 0) {
                         try {
-                            const response = await fetch('http://motor-redtech.ddns.net:7000/data/list');
+                            const response = await fetch('http://127.0.0.1:5000/data/list');
                             const data = await response.json();
                             const folderList = document.getElementById('folderList');
 
@@ -207,7 +207,7 @@
                 document.getElementById('loader').style.display = 'block';
 
                 try {
-                    const response = await fetch('http://motor-redtech.ddns.net:7000/process/folder?folderName=' + folderName);
+                    const response = await fetch('http://127.0.0.1:5000/process/folder?folderName=' + folderName);
                     const data = await response.json();
                     // Hide the loader after the fetch is complete
                     document.getElementById('loader').style.display = 'none';

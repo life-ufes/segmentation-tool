@@ -421,7 +421,7 @@
 
             try {
                 // Fetch the image names from the server 
-                const response = await fetch('http://motor-redtech.ddns.net:7000/image/list?folderName=' + folderName, {
+                const response = await fetch('http://127.0.0.1:5000/image/list?folderName=' + folderName, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -447,7 +447,7 @@
 
                 // Fetch each image from the server and push them to the images array
                 for (let i = 0; i < fileNames.length; i++) {
-                    const imageResponse = await fetch('http://motor-redtech.ddns.net:7000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
+                    const imageResponse = await fetch('http://127.0.0.1:5000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json'
@@ -570,7 +570,7 @@
                 maskedImage: maskedImage, // Ensure this is correctly populated
             };
 
-        fetch('http://motor-redtech.ddns.net:7000/save', {
+        fetch('http://127.0.0.1:5000/save', {
             method: 'POST',
             headers: {
                     'Content-Type': 'application/json'
@@ -638,7 +638,7 @@
                 // turn into seconds
                 time = time / 1000; 
                 //send time to the server 
-                fetch('http://motor-redtech.ddns.net:7000/data/savetimer', {
+                fetch('http://127.0.0.1:5000/data/savetimer', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -679,7 +679,7 @@
 
         document.addEventListener('DOMContentLoaded', async function() {
                 try {
-                    const response = await fetch('http://motor-redtech.ddns.net:7000/data/list');
+                    const response = await fetch('http://127.0.0.1:5000/data/list');
                     const data = await response.json();
                     const folderList = document.getElementById('folderList');
 
