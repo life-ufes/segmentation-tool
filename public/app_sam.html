@@ -335,6 +335,8 @@
         sessionIdentifier = 'sam-' + sessionIdentifier;
 
         var timer = null;
+
+        
         
 
 
@@ -438,9 +440,9 @@
      
 
         function do_the_fetch_box(jsonData){
-            let link = 'http://127.0.0.1:5000/predict/box'
+            let link = 'http://motor-redtech.ddns.net:7000/predict/box'
             if (mode === 'click'){ 
-                link = 'http://127.0.0.1:5000/predict/prompt'
+                link = 'http://motor-redtech.ddns.net:7000/predict/prompt'
             }
 
             // Send a POST request to the Flask server
@@ -614,7 +616,15 @@
         async function handleImage(e) {
             sendingAgain = false;
 
+            // if fileNames is not empty, it means that the user has already loaded the images
+            if (fileNames.length > 0) {
+                alert('You have already loaded the images, restart if something went wrong');
+                return;
+            }
+            
+            
             folderName = document.getElementById('folderName').value;
+
 
             if (folderName === '') {
                 alert('Please enter a folder name');
@@ -631,7 +641,7 @@
 
             try {
                 // Fetch the image names from the server 
-                const response = await fetch('http://127.0.0.1:5000/image/list?folderName=' + folderName, {
+                const response = await fetch('http://motor-redtech.ddns.net:7000/image/list?folderName=' + folderName, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -656,7 +666,7 @@
 
                 // Fetch each image from the server and push them to the images array
                 for (let i = 0; i < fileNames.length; i++) {
-                    const imageResponse = await fetch('http://127.0.0.1:5000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
+                    const imageResponse = await fetch('http://motor-redtech.ddns.net:7000/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json'
@@ -753,7 +763,7 @@
                 // turn into seconds
                 time = time / 1000; 
                 //send time to the server 
-                fetch('http://127.0.0.1:5000/data/savetimer', {
+                fetch('http://motor-redtech.ddns.net:7000/data/savetimer', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -764,7 +774,6 @@
                 zipAndDownload();
                 images_ready = [];
                 currentImageIndex = 0;
-                fileNames = [];
 
                 updateProgress(currentImageIndex);
                 let urlParams_ = new URLSearchParams(window.location.search);
@@ -819,7 +828,7 @@
                     // Check if the list is already populated to avoid refetching
                     if(document.getElementById('folderList').options.length === 0) {
                         try {
-                            const response = await fetch('http://127.0.0.1:5000/data/list');
+                            const response = await fetch('http://motor-redtech.ddns.net:7000/data/list');
                             const data = await response.json();
                             const folderList = document.getElementById('folderList');
 
