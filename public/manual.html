@@ -171,14 +171,14 @@
 <body>
     <div display="flex" justify-content="center" align-items="center">
         <h1>Image Segmentation Tool</h1>
-        <h2>Select one or more images to segment</h2>
+        <h2>Select one images folder and then start</h2>
         <div style="display: flex;">
             <div>
                 <input type="button" id="imageLoader" name="imageLoader" multiple style="display: none;"/>
-                <label for="imageLoader" class="custom-file-upload">
-                    Select images folder
-                </label>
                 <input type="text" id="folderName" name="folderName" list="folderList"  placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
+                <label for="imageLoader" class="custom-file-upload">
+                    Start
+                </label>
                 <datalist id="folderList"></datalist> 
       <!-- CANVAS -->
                  <div class="row">
@@ -399,6 +399,14 @@
             if (folderName === '') {
                 alert('Please enter a folder name');
                 return;
+            }
+
+            sessionIdentifier = sessionIdentifier + "-" + folderName;
+            //get name of person from parameter if exists
+            var urlParams = new URLSearchParams(window.location.search);
+            var name_of_person = urlParams.get('name_of_person');
+            if (name_of_person) {
+                sessionIdentifier = sessionIdentifier + "-" + name_of_person;
             }
 
             try {
@@ -625,9 +633,14 @@
                     },
                     body: JSON.stringify({time: time, sessionIdentifier: sessionIdentifier})  // send the JSON data
                 })
+                let urlParams_ = new URLSearchParams(window.location.search);
+                let name_of_person_ = urlParams_.get('name_of_person') 
+
+                window.location.href = '/index?name_of_person=' + name_of_person_ 
 
             }
             updateProgress(currentImageIndex);
+
 
         }
 

@@ -171,15 +171,15 @@
 <body>
     <div display="flex" justify-content="center" align-items="center">
         <h1>Automatic Image Segmentation Tool</h1>
-        <h2>Select one or more images to segment, use the points to indicate what should be segmented</h2>
+        <h2>Select one images folder and then start</h2>
         <div style="display: flex;">
             <div>
                 <input type="button" id="imageLoader" name="imageLoader" multiple style="display: none;"/>
-                <label for="imageLoader" class="custom-file-upload"> 
-                    Select image folder
-                </label>
                 <input type="text" id="folderName" name="folderName" list="folderList"  placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
-                <datalist id="folderList"></datalist> 
+                <label for="imageLoader" class="custom-file-upload">
+                    Start
+                </label>
+                <datalist id="folderList"></datalist>  
 
                     <!-- CANVAS -->
                     <div class="row">
@@ -378,21 +378,24 @@
         
         let start = null;
         let end = null;
+        let mouse_down = false;
+    
 
         function box_mode_down(event){
             start = [event.clientX, event.clientY];
+            mouse_down = true;
         }
 
         function box_mode_move(event){
-            if (start != null) {
+            if (start != null && mouse_down) {
                 end = [event.clientX, event.clientY];
                 drawBox();
             }
      
          }
 
-         function box_mouse_up(event){ 
-        if (start  != null && end != null) {
+        function box_mouse_up(event){ 
+            if (start  != null && end != null) {
                 let canvas = document.getElementById('img_seg');
                 let x = start[0] - canvas.offsetLeft;
                 let y = start[1] - canvas.offsetTop;
@@ -427,7 +430,9 @@
 
                 };
                 do_the_fetch_box(jsonData);
-            }
+                }
+            mouse_down = false;
+            
          }
 
      
@@ -616,6 +621,14 @@
                 return;
             }
 
+            sessionIdentifier = sessionIdentifier + "-" + folderName;
+            //get name of person from parameter if exists
+            var urlParams = new URLSearchParams(window.location.search);
+            var name_of_person = urlParams.get('name_of_person');
+            if (name_of_person) {
+                sessionIdentifier = sessionIdentifier + "-" + name_of_person;
+            }
+
             try {
                 // Fetch the image names from the server 
                 const response = await fetch('http://127.0.0.1:5000/image/list?folderName=' + folderName, {
@@ -725,6 +738,7 @@
             currentImageIndex++;
             sendingAgain = false;
             updateProgress(currentImageIndex);
+            
 
             if (currentImageIndex < images.length) {
                 loadImage();
@@ -751,6 +765,13 @@
                 images_ready = [];
                 currentImageIndex = 0;
                 fileNames = [];
+
+                updateProgress(currentImageIndex);
+                let urlParams_ = new URLSearchParams(window.location.search);
+                let name_of_person_ = urlParams_.get('name_of_person') 
+
+                window.location.href = '/index?name_of_person=' + name_of_person_ 
+
 
             }
         });

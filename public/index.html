@@ -108,24 +108,24 @@
     <div display="flex" justify-content="center" align-items="center">
         <h1>Image Segmentation Tool</h1>
         <h2>Select what you want to do:</h2>
+
         <div class="row">
             <div class="col">
-            <a href="/manual">
-                <button class="button">Manual Segmentation</button>
-            </a>
+                <label for="personName">Your Name (required):</label>
+                <input type="text" id="personName" name="personName" required placeholder="Enter your name" style="margin: 10px; padding: 10px;">
             </div>
         </div>
   
         <div class="row">
-            <!-- SAM Segmentation with dots -->
             <div class="col">
-                <a href="/sam">
-                    <button class="button">SAM Segmentation</button>
-                </a>
-            </a>
-                
-            </div>               
-
+                <button class="button" id="manualSegmentationButton">Manual Segmentation</button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col">
+                <button class="button" id="samSegmentationButton">SAM Segmentation</button>
+            </div>
         </div>
 
         <div class="row"></div>
@@ -139,6 +139,13 @@
         </div>
         </div>
         <script>
+        //check if name_of_person is in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const name_of_person = urlParams.get('name_of_person');
+        if (name_of_person) {
+            document.getElementById('personName').value = name_of_person;
+        }
+
           document.addEventListener('DOMContentLoaded', function() {
                 const inputField = document.getElementById('folderName');
                 
@@ -168,6 +175,30 @@
                     }
                 });
            });
+
+           document.addEventListener('DOMContentLoaded', function() {
+                const manualButton = document.getElementById('manualSegmentationButton');
+                const samButton = document.getElementById('samSegmentationButton');
+                const personNameInput = document.getElementById('personName');
+
+                function formatNameAndNavigate(baseUrl) {
+                    let personName = personNameInput.value.trim().replace(/\s+/g, '_');
+                    if (personName) { // Ensure the name is not empty
+                        window.location.href = `${baseUrl}?name_of_person=${personName}`;
+                    } else {
+                        alert('Please enter your name');
+                    }
+                }
+
+                manualButton.addEventListener('click', function() {
+                    formatNameAndNavigate('/manual');
+                });
+
+                samButton.addEventListener('click', function() {
+                    formatNameAndNavigate('/sam');
+                });
+            }); 
+
 
            document.querySelector('#preProcessFolderButton').addEventListener('click', async function() {
                 var folderName = document.getElementById('folderName').value;
