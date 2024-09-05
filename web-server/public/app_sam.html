@@ -662,7 +662,6 @@
                 updateProgress(0);
 
                 //start timer, it is the now datetime 
-                timer = new Date().getTime();
 
                 // Fetch each image from the server and push them to the images array
                 for (let i = 0; i < fileNames.length; i++) {
@@ -679,6 +678,8 @@
                         loadImage();
                     }
                 }
+                timer = new Date().getTime();
+
 
             } catch (error) {
                 console.error(error);
@@ -750,7 +751,7 @@
             updateProgress(currentImageIndex);
             
 
-            if (currentImageIndex < images.length) {
+            if (currentImageIndex < 50) {
                 loadImage();
             }else{
                 
@@ -770,8 +771,12 @@
                     },
                     body: JSON.stringify({time: time, sessionIdentifier: sessionIdentifier})  // send the JSON data
                 })
+
+
+                zip.file('time.txt', time.toString());
                 
                 zipAndDownload();
+                
                 images_ready = [];
                 currentImageIndex = 0;
 

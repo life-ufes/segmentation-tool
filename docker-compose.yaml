@@ -1,21 +1,23 @@
 version: "3"
 services:
   app-web:
-    image: node:14
+    build: ./web-server/
     volumes:
-      - .:/usr/src/app
-    working_dir: /usr/src/app
+      - ./web-server:/app
+    working_dir: /app
     command: bash -c "npm install && npm run start"
     ports:
       - 4002:4002
+    environment:
+      - API_URL=http://127.0.0.1:5000
 
   app-api:
     build: ./sam-server/
     volumes:
       - ./sam-server:/app
     working_dir: /app
-    command: bash -c "python3 server.py"
-    # tty: true
+    # command: bash -c "python3 server.py"
+    tty: true
     ports:
       - 5000:5000
     shm_size: 2g

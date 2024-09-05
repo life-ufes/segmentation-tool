@@ -162,8 +162,8 @@ cython_debug/
 #.idea/
 
 
-*.pth
-node_modules
+**.pth**
+**node_modules**
 *.onnx
 sam-server/sessions
 *.png
@@ -171,3 +171,5 @@ sam-server/sessions
 *.jpeg
 *.pkl
 !assets/*.png
+analise
+*.zip
