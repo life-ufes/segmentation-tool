@@ -16,8 +16,8 @@ services:
     volumes:
       - ./sam-server:/app
     working_dir: /app
-    # command: bash -c "python3 server.py"
-    tty: true
+    command: bash -c "python3 server.py"
+    # tty: true;
     ports:
       - 5000:5000
     shm_size: 2g
