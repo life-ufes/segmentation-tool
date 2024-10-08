@@ -205,6 +205,9 @@
 
                     <div class="col">
                         <button class="col button button-save" id="downloadImages">Download Images</button> 
+                        <div id="backButtonContainer" style="display: none;">
+                            <button class=" button" id="backButton">Back to the Homepage</button>
+                        </div>
                     </div>
 
                 </div>
@@ -226,12 +229,12 @@
         
         <div id="selection_buttons" class="row" >
             <div class="col">
-                <button class="button button-selection button-selection-pressed" id="modeBox" >Box</button>
-                <button class="button button-selection" id="modeClick">Click</button>
+                <button style="display: none;" class="button button-selection button-selection-pressed" id="modeBox" >Box</button>
+                <button style="display: none;" class="button button-selection" id="modeClick">Click</button>
             </div>
 
             <div class="col">
-                <button class="button" id="generateButton">Generate Mask</button>
+                <button style="display: none;" class="button" id="generateButton">Generate Mask</button>
                 <button class="button" id="pushButton">Next ►</button>
                 </div>
             </div>  
@@ -248,30 +251,35 @@
             var fileNames = [];
 
                         
-            // Create a new zip file
-            var zip = new JSZip();
 
-            function zipAndDownload(){
+            
+        function zipAndDownload(){
                 
-                // Create a new zip file
-                var zip = new JSZip();
-                
+                // Create a new zip 
+                let zip = new JSZip();
+
+                if (images_ready.length >= size_of_images){
+                    zip.file('time.txt', time_spend.toString());
+                }
 
                 if (images_ready.length === 0) {
-                    alert('Nenhuma imagem foi segmentada ainda');
+                    alert('No  annotations to download');
                     return;
                 }
 
                 // Add images to the zip file
                 images_ready.forEach((image, index) => {
                     // Convert the image data to a Blob
-                    var imgData = image.src.split(',')[1];
+                    var imgData = image.replace(/^data:image\/(png|jpg);base64,/, "");
                     var imgBlob = b64toBlob(imgData, 'image/png');
 
                     let image_name = fileNames[index];
 
-                    image_name = image_name + '.png';
-
+                    //remove extension if not png and add png
+                    if (!image_name.endsWith('.png')) {
+                        image_name = image_name + '.png';
+                    }
+                    
 
                     // Add the image Blob to the zip file
                     zip.file(image_name, imgBlob, {base64: true});
@@ -282,13 +290,8 @@
                 .then(function(content) {
                     saveAs(content, sessionIdentifier + '.zip');
                 });
-            }
+        }
 
-
-
-           
-
-    
 
             // Function to convert base64 data to a Blob
             function b64toBlob(b64Data, contentType='', sliceSize=512) {
@@ -315,6 +318,8 @@
         <script>
 
         var mode = 'box'
+
+        const size_of_images = 50;
            
 
         var canvas = document.getElementById('img_seg');
@@ -336,9 +341,7 @@
 
         var timer = null;
 
-        
-        
-
+        var time_spend = 0
 
         var folderName = '';
 
@@ -615,6 +618,8 @@
         
         async function handleImage(e) {
             sendingAgain = false;
+            images_ready = [];
+            currentImageIndex = 0;
 
             // if fileNames is not empty, it means that the user has already loaded the images
             if (fileNames.length > 0) {
@@ -729,16 +734,14 @@
                 return;
             }
 
-
-
-            var canvas = document.getElementById('img_res'); 
             if (image_b64_ready === undefined) {
                 alert('Please generate the mask before moving to the next image');
                 return;
             }
-            images_ready.push(image_b64_ready);
+            var canvas = document.getElementById('img_res'); 
+            var dataUrl = canvas.toDataURL('image/png')
+            images_ready.push(dataUrl);
             image_b64_ready = undefined;
-            
 
             var data = {
                 imageWidth: img.width,
@@ -751,18 +754,17 @@
             updateProgress(currentImageIndex);
             
 
-            if (currentImageIndex < 50) {
+            if (currentImageIndex < size_of_images) {
                 loadImage();
             }else{
                 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctxSeg.clearRect(0, 0, canvasSeg.width, canvasSeg.height);
                 //alert segmentation is over 
-                alert('Segmentation is over');
                 let end_time = new Date().getTime();
                 let time = end_time - timer;
                 // turn into seconds
-                time = time / 1000; 
+                time_spend = time / 1000; 
                 //send time to the server 
                 fetch('<%= apiUrl %>/data/savetimer', {
                     method: 'POST',
@@ -771,21 +773,20 @@
                     },
                     body: JSON.stringify({time: time, sessionIdentifier: sessionIdentifier})  // send the JSON data
                 })
-
-
-                zip.file('time.txt', time.toString());
-                
-                zipAndDownload();
-                
-                images_ready = [];
-                currentImageIndex = 0;
+       
 
                 updateProgress(currentImageIndex);
                 let urlParams_ = new URLSearchParams(window.location.search);
                 let name_of_person_ = urlParams_.get('name_of_person') 
+                const backButtonContainer = document.getElementById('backButtonContainer');
+                const backButton = document.getElementById('backButton');
+                backButtonContainer.style.display = 'block';
+                backButton.onclick = function() {
+                    window.location.href = '/index?name_of_person=' + name_of_person_;
+                };
 
-                window.location.href = '/index?name_of_person=' + name_of_person_ 
-
+                //alert segmentation is over 
+                alert('Segmentation is over: click in "Download Images" to download the images and time spent');
 
             }
         });
