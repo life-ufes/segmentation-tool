@@ -172,6 +172,7 @@
     <div display="flex" justify-content="center" align-items="center">
         <h1>Image Segmentation Tool</h1>
         <h2>Select one images folder and then start</h2>
+       
         <div style="display: flex;">
             <div>
                 <input type="button" id="imageLoader" name="imageLoader" multiple style="display: none;"/>
@@ -180,7 +181,7 @@
                     Start
                 </label>
                 <datalist id="folderList"></datalist> 
-      <!-- CANVAS -->
+                <!-- CANVAS -->
                  <div class="row">
                     <div class="col">                            
                         <div style="margin: 15px 0;">
@@ -197,10 +198,15 @@
                         <!-- CANVAS WITH RESULTING MASK -->
                         <canvas id="img_res"></canvas>
                     </div>
+                    <div class="col">
+                        <button class="col button button-save" id="downloadImages">Download Images</button> 
+                        <div id="backButtonContainer" style="display: none;">
+                            <button class=" button" id="backButton">Back to the Homepage</button>
+                        </div>
+                    </div>
 
                 </div>
             <h3>To segment, click and drag the mouse over the image</h3>
-                
 
             <div style="margin: 20px 0;">
                 <label for="imageProgress">Progress:</label>
@@ -216,6 +222,7 @@
                 <!-- <button class=" button button-save" id="downloadImages">Download Images</button>  -->
                 </div>
             </div>  
+           
             
         </div>
        
@@ -231,13 +238,18 @@
         var sessionIdentifier = Math.random().toString(36).substring(7);
         //add box-sam- to the session identifier
         sessionIdentifier = 'manual-' + sessionIdentifier;
+
+        const size_of_images = 50;
         
-        // Create a new zip file
-        var zip = new JSZip();
-        
+       
         function zipAndDownload(){
                 
                 // Create a new zip 
+                let zip = new JSZip();
+
+                if (images_ready.length >= size_of_images){
+                    zip.file('time.txt', time_spend.toString());
+                }
 
                 if (images_ready.length === 0) {
                     alert('No  annotations to download');
@@ -267,7 +279,7 @@
                 .then(function(content) {
                     saveAs(content, sessionIdentifier + '.zip');
                 });
-            }
+        }
 
         document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
 
@@ -372,6 +384,7 @@
         var startY;
         var images = [];
         var currentImageIndex = 0;
+        var time_spend = 0;
 
         var data_array = [];
 
@@ -390,11 +403,9 @@
 
         async function handleImage(e) {
             sendingAgain = false;
-
+            images_ready = [];
+            currentImageIndex = 0;
             
-
-
-
             folderName = document.getElementById('folderName').value;
 
              if (fileNames.length > 0) {
@@ -516,8 +527,8 @@
         document.getElementById('pushButton').addEventListener('click', function() {
          
             
-            var canvas = document.getElementById('img_res'); 
-            var dataUrl = canvas.toDataURL('image/png')
+            let canvas_res = document.getElementById('img_res'); 
+            var dataUrl = canvas_res.toDataURL('image/png')
             images_ready.push(dataUrl);
 
             var maskedImage = dataUrl.split(',')[1];
@@ -536,29 +547,27 @@
             if(img.width > maxWidth){
 
                 //resize the image withot drawing it
-                var canvas = document.createElement('canvas');
-                var ctx = canvas.getContext('2d');
+                canvas_res = document.createElement('canvas');
+                var ctx = canvas_res.getContext('2d');
                 ratio = maxWidth / img.width;   // get ratio for scaling image
-                canvas.width = maxWidth;
-                canvas.height = img.height * ratio;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                originalImage = canvas.toDataURL();
+                canvas_res.width = maxWidth;
+                canvas_res.height = img.height * ratio;
+                ctx.drawImage(img, 0, 0, canvas_res.width, canvas_res.height);
+                originalImage = canvas_res.toDataURL();
             }
             else{
-                var canvas = document.createElement('canvas');
+                canvas_res = document.createElement('canvas');
                 var ctx = canvas.getContext('2d');
                 canvas.width = img.width;
                 canvas.height = img.height;
                 
                 ctx.drawImage(img, 0, 0, img.width, img.height);
-                originalImage = canvas.toDataURL();
+                originalImage = canvas_res.toDataURL();
                 
             }
 
 
             originalImage = originalImage.split(',')[1];
-
-
 
 
             let jsonData = { 
@@ -622,18 +631,16 @@
             rectangles = [];
             data_array.push(data);
             currentImageIndex++;
-            if (currentImageIndex < 50) {
+            if (currentImageIndex < size_of_images) {
                 loadImage();
             }else{
                 //erase the canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                //alert segmentation is over 
-                alert('Segmentation is over');
-
+            
                 let end_time = new Date().getTime();
                 let time = end_time - timer;
                 // turn into seconds
-                time = time / 1000; 
+                time_spend = time / 1000; 
                 //send time to the server 
                 fetch('<%= apiUrl %>/data/savetimer', {
                     method: 'POST',
@@ -645,12 +652,15 @@
                 let urlParams_ = new URLSearchParams(window.location.search);
                 let name_of_person_ = urlParams_.get('name_of_person')
 
-                zip.file('time.txt', time.toString());
-                
-                zipAndDownload();
+                const backButtonContainer = document.getElementById('backButtonContainer');
+                const backButton = document.getElementById('backButton');
+                backButtonContainer.style.display = 'block';
+                backButton.onclick = function() {
+                    window.location.href = '/index?name_of_person=' + name_of_person_;
+                };
 
-
-                window.location.href = '/index?name_of_person=' + name_of_person_ 
+                //alert segmentation is over 
+                alert('Segmentation is over: click in "Download Images" to download the images and time spent');
 
 
             }
