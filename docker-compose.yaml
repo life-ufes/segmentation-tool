@@ -9,7 +9,7 @@ services:
     ports:
       - 4002:4002
     environment:
-      - API_URL=http://127.0.0.1:5000
+      - API_URL=http://200.137.66.8:5000
 
   app-api:
     build: ./sam-server/
