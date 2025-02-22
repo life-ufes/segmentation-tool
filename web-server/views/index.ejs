@@ -128,14 +128,14 @@
             </div>
         </div>
 
-        <!-- <div class="row">
+        <div class="row">
              <div class="col">
             <button id="preProcessFolderButton" class="button">Folder Pre-Processing</button>
             <input type="text" id="folderName" name="folderName" list="folderList" placeholder="Enter the folder name" style="margin: 10px; padding: 10px;"/> 
             <datalist id="folderList"></datalist> 
             <div id="loader" class="loader" style="display: none;"></div>
             </div>
-        </div> -->
+        </div> 
         </div>
         <script>
         //check if name_of_person is in the URL
@@ -152,7 +152,7 @@
                     // Check if the list is already populated to avoid refetching
                     if(document.getElementById('folderList').options.length === 0) {
                         try {
-                            const response = await fetch('http://127.0.0.1:5000/data/list');
+                            const response = await fetch('<%= apiUrl %>/data/list');
                             const data = await response.json();
                             const folderList = document.getElementById('folderList');
 
