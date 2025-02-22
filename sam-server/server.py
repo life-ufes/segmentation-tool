@@ -317,6 +317,8 @@ def predict_box():
     image_obj = get_embedding(image_name, embeddingFolder)
     predictor.features = image_obj['embedd']
     predictor.original_size = image_obj['original_size']
+    #features is a torch tensor, set it to device 
+    predictor.features = predictor.features.to(DEVICE)
     predictor.input_size = image_obj['input_size']
     predictor.is_image_set = True
 

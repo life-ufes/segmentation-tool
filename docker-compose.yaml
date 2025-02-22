@@ -7,19 +7,15 @@ services:
     working_dir: /app
     command: bash -c "npm install && npm run start"
     ports:
-      - 4002:4002
-    environment:
-      - API_URL=http://200.137.66.8:5000
-
+      - 4000:4002
   app-api:
     build: ./sam-server/
     volumes:
       - ./sam-server:/app
     working_dir: /app
     command: bash -c "python3 server.py"
-    # tty: true;
     ports:
       - 5000:5000
     shm_size: 2g
-    # runtime: nvidia
+    runtime: nvidia
     

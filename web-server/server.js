@@ -1,6 +1,10 @@
 const express = require('express');
 const path = require('path');
+const cors = require('cors'); // Import the cors middleware
 const app = express();
+
+// Enable CORS for all routes
+app.use(cors());
 
 // Set the view engine to EJS
 app.set('view engine', 'ejs');
