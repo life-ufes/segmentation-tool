@@ -8,7 +8,7 @@ First of all, you need to download the SAM checkpoints from [here](https://dl.fb
 
 Next, if you don't have Docker installed, you need to install it and Docker Compose. You can find the instructions [here](https://docs.docker.com/get-docker/).
 
-Finally, all you need to do is to run the following command:
+Finally, all you need to do is run the following command:
 
 ```bash
 docker-compose up -d
@@ -18,60 +18,53 @@ If everything goes well, you can access the application on `localhost:4002`.
 
 ## How to use it
 
-To use the application, you need to create a folder called `images` inside the folder `sam-server`. Then, you, inside this folder, you may create your image groups to segment. An example of path is `sam-server/images/group_1`.
+To use the application, you need to create a folder called `images` inside the folder `sam-server`. Then, inside this folder, you may create your image groups to segment. An example of path is `sam-server/images/group_1`.
 
 Inside the group folder, you need to put the images you want to segment.
 
-After that, you can access the application on `localhost:4002`. Here, you have 4 options:
+After that, you can access the application on `localhost:4002`. Here, you have 3 options:
 
 ![Main page](assets/main-page.png)
 
 - `Manual segmentation`: use it to segment the images manually.
   
-- `Dots with SAM segmentation`: use it to segment the images with the help of the SAM model using as prompt dots within the image.
+- `Box with SAM segmentation`: use it to segment the images with the help of the SAM model using a box as prompt.
   
-- `Box with SAM segmentation`: use it to segment the images with the help of the SAM model using as prompt a box within the image.
-  
-- `Folder Pre-Processing`: indicate a group folder inside the `sam-server/images` folder to pre-process the images before segmenting them (more info bellow).
+- `Folder Pre-Processing`: indicate a group folder inside the `sam-server/images` folder to pre-process the images before segmenting them (more info below).
+
+If your API server is not running on `localhost` at port `5000`, make sure to create and update the `API_URL` in the `.env` file.
 
 ## Manual annotation
 
-If you want to segment the images manually, you can click on the `Manual segmentation` button. You will see the following screen:
+If you want to segment the images manually, click on the `Manual segmentation` button. You will see the following screen:
 
 ![manually](assets/manually.png)
 
-Here, you must indicate the name of the group folder to segment (again, the folder must be inside the `sam-server/images` folder). Then click on `Select Images Folder`. 
+Here, indicate the name of the group folder to segment (the folder must be inside the `sam-server/images` folder) and click on `Select Images Folder`. 
 
-Next, the images will be loaded one by one and you can segment them by drawing on the original image. You're going to see the mask on the right side of the screen. When you finish, click on `Next` to go to the next image. If you did something wrong in the mask, just click on `Reset` to start over.
+The images will be loaded one by one and you can segment them by drawing on the original image. You'll see the mask on the right side of the screen. When you finish, click on `Next` to go to the next image. If you did something wrong in the mask, click on `Reset` to start over.
 
 ![manually](assets/manually-2.png)
 
 ## Annotate with SAM
 
-In order to annotate the images with the SAM's help, the first step is to preprocess the images. This step is necessary because SAM may take a long time to generate the data to segment the images. So, to improve user experience, we preprocess the images before segmenting them.
+To annotate the images with SAM's help, the first step is to preprocess the images. This step is necessary because SAM may take a long time to generate the data required for segmentation. Preprocessing the images improves the user experience by generating the necessary data beforehand.
 
-To pre-process the images, you need to set the group folder (inside the `sam-server/images` folder) and click on `Folder Pre-Processing`. 
+To pre-process the images, set the group folder (inside the `sam-server/images` folder) and click on `Folder Pre-Processing`. 
 
 ![Alt text](assets/pre-process.png)
 
-After that, the images will be pre-processed and you may see inside the folder that a `.pkl` file is created to each image. This file contains the data that SAM needs to segment the image along with the prompt (in this case, a box or dots).
+After preprocessing, a `.pkl` file is created for each image in the folder. This file contains the data that SAM needs to segment the image along with the prompt (in this case, a box).
 
-It's important to note that the pre-processing may take a while (5-10min for 50 images). However, it is a one-time process. After that, you can segment the images without waiting for the pre-processing.
+Note that preprocessing may take a while (5-10 minutes for 50 images), but it is a one-time process. Once complete, you can segment the images without waiting again.
 
-Now, you must choose between `Dots with SAM segmentation` or `Box with SAM segmentation`. The difference between them is the prompt you're going to use to segment the image. The process is similar to the manual segmentation, but now you're going to see the mask generated by SAM according to the dots or box you draw.
-
-Example of dots segmentation:
-![Alt text](assets/dots-sam.png)
-
+Now, choose `Box with SAM segmentation`. The process is similar to the manual segmentation, but now you will see the mask generated by SAM based on the box prompt you draw.
 
 Example of box segmentation:
 ![Alt text](assets/box-sam.png)
 
+## Downloading the results
 
-**Note:** in our experience, the box prompt is more robust than the dots prompt. Thus, we recommend using the box prompt.
+After completing the annotations, you can download the results by clicking on the `Download` button. The results will be downloaded in a `.zip` file.
 
-
-## Dowloading the results
-After doing all anotations, you can download the results by clicking on the `Download` button. The results will be downloaded in a `.zip` file.
-
-However, if you face any problem in this step, all results are saved in the folder `sam-server/sessions`.
+If you encounter any issues during this step, all results are saved in the folder `sam-server/sessions`.
