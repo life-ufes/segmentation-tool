@@ -4,9 +4,12 @@ Este repositório contém o código para a ferramenta de segmentação que é ut
 
 ## Instalação
 
-Primeiramente, você precisa baixar os checkpoints do SAM [aqui](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) e colocá-los na pasta `sam-server`.
+Este projeto utiliza exclusivamente o SAM 2.1. Baixe o checkpoint e o arquivo de configuração (por exemplo `sam2.1_hiera_l.yaml` e o respectivo `.pt`) do repositório oficial e coloque-os na pasta `sam-server` (ou monte via volume no container). Defina as variáveis de ambiente:
 
-Em seguida, se você não tiver o Docker instalado, será necessário instalá-lo juntamente com o Docker Compose. Você pode encontrar as instruções [aqui](https://docs.docker.com/get-docker/).
+```
+SAM_CHECKPOINT=/app/sam2.1_checkpoint.pt
+SAM2_MODEL_CONFIG=sam2.1_hiera_l.yaml
+```
 
 Por fim, basta executar o seguinte comando:
 
@@ -14,7 +17,11 @@ Por fim, basta executar o seguinte comando:
 docker-compose up -d
 ```
 
-Se tudo ocorrer bem, você poderá acessar a aplicação em `localhost:4002`.
+Se tudo ocorrer bem, você poderá acessar a aplicação em `localhost:4000`.
+
+### Observações sobre o SAM2
+
+- Os endpoints e fluxo da interface permanecem iguais, apenas a implementação interna mudou para SAM2.
 
 ## Como Usar
 
@@ -22,7 +29,7 @@ Para utilizar a aplicação, você precisa criar uma pasta chamada `images` dent
 
 Dentro da pasta do grupo, você deve colocar as imagens que deseja segmentar.
 
-Após isso, acesse a aplicação em `localhost:4002`. Aqui, você encontrará 3 opções:
+Após isso, acesse a aplicação em `localhost:4000`. Aqui, você encontrará 3 opções:
 
 ![Página principal](assets/main-page.png)
 
@@ -46,7 +53,7 @@ As imagens serão carregadas uma a uma e você poderá segmentá-las desenhando 
 
 ![Manualmente 2](assets/manually-2.png)
 
-## Anotar com SAM
+## Anotar com SAM 2
 
 Para anotar as imagens com a ajuda do SAM, o primeiro passo é pré-processar as imagens. Esta etapa é necessária porque o SAM pode demorar para gerar os dados requeridos para a segmentação. O pré-processamento das imagens melhora a experiência do usuário, gerando os dados necessários antecipadamente.
 
