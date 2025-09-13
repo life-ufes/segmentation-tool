@@ -249,621 +249,140 @@
         <script> 
 
             var fileNames = [];
+            var mode = 'box';
+            const size_of_images = 50;
+            var canvas = document.getElementById('img_seg');
+            var canvasSeg = document.getElementById('img_res');
+            var ctx = canvas.getContext('2d');
+            var ctxSeg = canvasSeg.getContext('2d');
+            var img = new Image();
+            var rectangles = [];
+            var images = [];
+            var imageOriginalDimensions = []; // Store original dimensions for each image
+            var currentImageIndex = 0;
+            var images_ready = [];
+            var image_b64_ready = undefined;
+            var sessionIdentifier = 'sam-' + Math.random().toString(36).substring(7);
+            var timer = null;
+            var time_spend = 0;
+            var folderName = '';
+            var box = [];
+            var inputLabels = [];
+            var inputPoints = [];
+            var sendingAgain = false;
+            let start = null;
+            let end = null;
+            let mouse_down = false;
+            var selectedButton = null;
+            var originalImageWidth = 0;
+            var originalImageHeight = 0;
 
-                        
+            function canvasRelativePosition(evt){
+                const rect = canvas.getBoundingClientRect();
+                return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+            }
+            function imageSpace(xCanvas, yCanvas){
+                // Use original image dimensions for current image instead of frontend image dimensions
+                const currentDims = imageOriginalDimensions[currentImageIndex];
+                if (!currentDims) {
+                    // Fallback to img dimensions if original not available
+                    const xRatio = img.width / canvas.width;
+                    const yRatio = img.height / canvas.height;
+                    return { x: Math.round(xCanvas * xRatio), y: Math.round(yCanvas * yRatio) };
+                }
+                const xRatio = currentDims.width / canvas.width;
+                const yRatio = currentDims.height / canvas.height;
+                return { x: Math.round(xCanvas * xRatio), y: Math.round(yCanvas * yRatio) };
+            }
 
-            
-        function zipAndDownload(){
-                
-                // Create a new zip 
+            function zipAndDownload(){
                 let zip = new JSZip();
-
-                if (images_ready.length >= size_of_images){
-                    zip.file('time.txt', time_spend.toString());
-                }
-
-                if (images_ready.length === 0) {
-                    alert('No  annotations to download');
-                    return;
-                }
-
-                // Add images to the zip file
+                if (images_ready.length >= size_of_images){ zip.file('time.txt', time_spend.toString()); }
+                if (images_ready.length === 0){ alert('No  annotations to download'); return; }
                 images_ready.forEach((image, index) => {
-                    // Convert the image data to a Blob
                     var imgData = image.replace(/^data:image\/(png|jpg);base64,/, "");
                     var imgBlob = b64toBlob(imgData, 'image/png');
-
                     let image_name = fileNames[index];
-
-                    //remove extension if not png and add png
-                    if (!image_name.endsWith('.png')) {
-                        image_name = image_name + '.png';
-                    }
-                    
-
-                    // Add the image Blob to the zip file
+                    if (!image_name.endsWith('.png')) image_name += '.png';
                     zip.file(image_name, imgBlob, {base64: true});
                 });
-
-                // Generate the zip file and trigger the download
-                zip.generateAsync({type:"blob"})
-                .then(function(content) {
-                    saveAs(content, sessionIdentifier + '.zip');
-                });
-        }
-
-
-            // Function to convert base64 data to a Blob
-            function b64toBlob(b64Data, contentType='', sliceSize=512) {
-                const byteCharacters = atob(b64Data);
-                const byteArrays = [];
-
-                for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                zip.generateAsync({type:"blob"}).then(content => saveAs(content, sessionIdentifier + '.zip'));
+            }
+            function b64toBlob(b64Data, contentType='', sliceSize=512){
+                const byteCharacters = atob(b64Data); const byteArrays = [];
+                for (let offset=0; offset < byteCharacters.length; offset += sliceSize){
                     const slice = byteCharacters.slice(offset, offset + sliceSize);
-
                     const byteNumbers = new Array(slice.length);
-                    for (let i = 0; i < slice.length; i++) {
-                        byteNumbers[i] = slice.charCodeAt(i);
-                    }
-
-                    const byteArray = new Uint8Array(byteNumbers);
-                    byteArrays.push(byteArray);
+                    for (let i=0;i<slice.length;i++){ byteNumbers[i] = slice.charCodeAt(i); }
+                    byteArrays.push(new Uint8Array(byteNumbers));
                 }
-
-                const blob = new Blob(byteArrays, {type: contentType});
-                return blob;
-            }
-        </script>
-      
-        <script>
-
-        var mode = 'box'
-
-        const size_of_images = 50;
-           
-
-        var canvas = document.getElementById('img_seg');
-        var canvasSeg = document.getElementById('img_res');
-        var ctx = canvas.getContext('2d');
-        var ctxSeg = canvasSeg.getContext('2d');
-        var img = new Image();
-        var rectangles = [];
-        var isDown = false;
-        var startX;
-        var startY;
-        var images = [];
-        var currentImageIndex = 0;
-        var images_ready = [];
-        var image_b64_ready = undefined
-        var sessionIdentifier = Math.random().toString(36).substring(7);
-        //add box-sam- to the session identifier
-        sessionIdentifier = 'sam-' + sessionIdentifier;
-
-        var timer = null;
-
-        var time_spend = 0
-
-        var folderName = '';
-
-        var box = [];
-        var inputLabels = [];
-        var inputPoints = [];
-
-
-        var sendingAgain = false;
-
-        function click_mode(event){ 
-            let canvas = document.getElementById('img_seg');
-
-            // Add the label to the inputLabels array
-            inputLabels.push(1);
-            //convert input x and y to the original image size
-            let x = event.clientX - canvas.offsetLeft;
-            let y = event.clientY - canvas.offsetTop;
-            let x_ratio = img.width / canvas.width;
-            let y_ratio = img.height / canvas.height;
-
-            x = Math.round(x * x_ratio);
-            y = Math.round(y * y_ratio);
-            
-            // Add the point to the inputPoints array
-            inputPoints.push([x, y]);
-
-            // Draw a circle on the canvas to show the point
-            let x_point = event.clientX - canvas.offsetLeft;
-            let y_point = event.clientY - canvas.offsetTop;
-            let ctx = canvas.getContext('2d');
-            ctx.beginPath();
-            ctx.arc(x_point, y_point, 5, 0, 2 * Math.PI);
-            ctx.fillStyle = 'blue';
-            ctx.fill();
-        
-        }
-
-        
-        let start = null;
-        let end = null;
-        let mouse_down = false;
-    
-
-        function box_mode_down(event){
-            start = [event.clientX, event.clientY];
-            mouse_down = true;
-        }
-
-        function box_mode_move(event){
-            if (start != null && mouse_down) {
-                end = [event.clientX, event.clientY];
-                drawBox();
-            }
-     
-         }
-
-        function box_mouse_up(event){ 
-            if (start  != null && end != null) {
-                let canvas = document.getElementById('img_seg');
-                let x = start[0] - canvas.offsetLeft;
-                let y = start[1] - canvas.offsetTop;
-                let width = end[0] - start[0];
-                let height = end[1] - start[1];
-
-                //convert to the original image size
-                x = x * img.width / canvas.width;
-                y = y * img.height / canvas.height;
-                width = width * img.width / canvas.width;
-                height = height * img.height / canvas.height;
-
-
-                box = [x, y, x + width, y + height];
-
-                // Reset start and end
-                start = null;
-                end = null;
-
-                document.getElementById('loading').style.display = 'block';
-                let dataUrl = images[currentImageIndex];
-                let base64Image = dataUrl.split(',')[1];
-
-
-                let jsonData = {
-                    file: base64Image,
-                    fileName: fileNames[currentImageIndex],
-                    folderName: folderName,
-                    box: box,
-                    again: sendingAgain,
-                    sessionIdentifier: sessionIdentifier
-
-                };
-                do_the_fetch_box(jsonData);
-                }
-            mouse_down = false;
-            
-         }
-
-     
-
-        function do_the_fetch_box(jsonData){
-            let link = '<%= apiUrl %>/predict/box'
-            if (mode === 'click'){ 
-                link = '<%= apiUrl %>/predict/prompt'
+                return new Blob(byteArrays, {type: contentType});
             }
 
-            // Send a POST request to the Flask server
-            fetch(link, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(jsonData)  // send the JSON data
-            })
-            .then(response => response.json())  // parse the response as JSON
-            .then(data => {
-                // The image is returned as a base64 string in the 'image' property
-                var imageBase64 = 'data:image/png;base64,' + data.image;
-
-                // Create a new Image object
-                var img = new Image();
-                img.onload = function() {
-                    // Draw the image on the img_res canvas when it's loaded
-                    var canvas = document.getElementById('img_res');
-                    var ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    // Hide the loading animation
-                    document.getElementById('loading').style.display = 'none';
-                    image_b64_ready = img
-                
-                };
-                img.src = imageBase64;
-            })
-            .catch(error => {
-                console.error(error);
-
-                // Hide the loading animation
-                document.getElementById('loading').style.display = 'none';
-                });
-            if (sendingAgain==false){
-                sendingAgain = true;
+            function click_mode(event){
+                const p = canvasRelativePosition(event); const imgP = imageSpace(p.x,p.y);
+                inputLabels.push(1); inputPoints.push([imgP.x, imgP.y]);
+                const ctxLocal = canvas.getContext('2d');
+                ctxLocal.beginPath(); ctxLocal.arc(p.x, p.y, 5, 0, 2*Math.PI); ctxLocal.fillStyle='blue'; ctxLocal.fill();
             }
-        }
+            function box_mode_down(event){ const p = canvasRelativePosition(event); start=[p.x,p.y]; mouse_down = true; }
+            function box_mode_move(event){ if(!mouse_down) return; const p=canvasRelativePosition(event); end=[p.x,p.y]; drawBox(); }
+            function box_mouse_up(event){ if(!(mouse_down && start && end)){ mouse_down=false; return; }
+                let x0=Math.min(start[0],end[0]), y0=Math.min(start[1],end[1]); let x1=Math.max(start[0],end[0]), y1=Math.max(start[1],end[1]);
+                x0=Math.max(0,Math.min(canvas.width-1,x0)); y0=Math.max(0,Math.min(canvas.height-1,y0));
+                x1=Math.max(0,Math.min(canvas.width-1,x1)); y1=Math.max(0,Math.min(canvas.height-1,y1));
+                const p0=imageSpace(x0,y0), p1=imageSpace(x1,y1); box=[p0.x,p0.y,p1.x,p1.y]; start=end=null; mouse_down=false;
+                if((box[2]-box[0])<2 || (box[3]-box[1])<2){ alert('Box too small'); return; }
+                document.getElementById('loading').style.display='block';
+                const dataUrl=images[currentImageIndex]; const base64Image=dataUrl.split(',')[1];
+                do_the_fetch_box({ file: base64Image, fileName: fileNames[currentImageIndex], folderName: folderName, box: box, again: sendingAgain, sessionIdentifier: sessionIdentifier });
+            }
+            function do_the_fetch_box(jsonData){
+                let link = '<%= apiUrl %>/predict/box'; if (mode==='click') link = '<%= apiUrl %>/predict/prompt';
+                fetch(link,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(jsonData)})
+                  .then(async r=>{ let j; try{ j=await r.json(); }catch(e){ throw new Error('Invalid JSON response'); } if(!r.ok || !j || j.error || !j.image){ throw new Error(j && j.error ? j.error : 'Segmentation failed'); } return j; })
+                  .then(data=>{ var imageBase64='data:image/png;base64,'+data.image; var imgLocal=new Image();
+                    imgLocal.onload=function(){ var c=document.getElementById('img_res'); var cctx=c.getContext('2d'); cctx.clearRect(0,0,c.width,c.height); cctx.drawImage(imgLocal,0,0,c.width,c.height); document.getElementById('loading').style.display='none'; image_b64_ready=imgLocal; };
+                    imgLocal.src=imageBase64; })
+                  .catch(err=>{ console.error(err); alert(err.message); document.getElementById('loading').style.display='none'; });
+                if(!sendingAgain) sendingAgain=true;
+            }
+            function drawBox(){ const cctx=canvas.getContext('2d'); cctx.clearRect(0,0,canvas.width,canvas.height); cctx.drawImage(img,0,0,canvas.width,canvas.height); if(start&&end){ cctx.beginPath(); cctx.rect(start[0],start[1],end[0]-start[0], end[1]-start[1]); cctx.strokeStyle='blue'; cctx.stroke(); } }
+            function updateProgress(p){ document.getElementById('imageProgress').value = p/fileNames.length*100; document.getElementById('progressInfo').textContent = p + '/' + fileNames.length; }
+            async function handleImage(e){ sendingAgain=false; images_ready=[]; imageOriginalDimensions=[]; currentImageIndex=0; if(fileNames.length>0){ alert('You have already loaded the images, restart if something went wrong'); return; }
+                folderName=document.getElementById('folderName').value; if(!folderName){ alert('Please enter a folder name'); return; }
+                sessionIdentifier = sessionIdentifier + '-' + folderName; const urlParams=new URLSearchParams(window.location.search); const name_of_person=urlParams.get('name_of_person'); if(name_of_person) sessionIdentifier += '-' + name_of_person;
+                try{ const response=await fetch('<%= apiUrl %>/image/list?folderName='+encodeURIComponent(folderName));
+                    if(!response.ok){ let txt=await response.text(); try{ const j=JSON.parse(txt); alert('Error: '+(j.error||response.status)); }catch(_){ alert('Error '+response.status+': '+txt.substring(0,120)); } return; }
+                    let data=await response.json(); fileNames=data.images; if(!fileNames || fileNames.length===0){ alert('No images found in folder'); return; } updateProgress(0);
+                    for(let i=0;i<fileNames.length;i++){ const r=await fetch('<%= apiUrl %>/image?imageName='+encodeURIComponent(fileNames[i])+'&folderName='+encodeURIComponent(folderName)); if(!r.ok){ console.error('Failed image', fileNames[i]); continue; } const idata=await r.json(); if(!idata.image){ console.warn('Missing image field for', fileNames[i]); continue; } images.push('data:image/png;base64,'+idata.image); 
+                    // Store original dimensions for each image
+                    imageOriginalDimensions.push({width: idata.originalWidth, height: idata.originalHeight});
+                    if(i===0) loadImage(); }
+                    timer=new Date().getTime(); }catch(err){ console.error(err); alert('Request failed: '+err.message); }
+            }
+            function loadImage(){ img.onload=function(){ const maxWidth=500; if(img.width>maxWidth){ const ratio=maxWidth/img.width; canvas.width=maxWidth; canvas.height=img.height*ratio; ctx.drawImage(img,0,0,canvas.width,canvas.height);} else { canvas.width=img.width; canvas.height=img.height; ctx.drawImage(img,0,0,img.width,img.height);} canvasSeg.width=canvas.width; canvasSeg.height=canvas.height; ctxSeg.fillStyle='black'; ctxSeg.fillRect(0,0,canvasSeg.width,canvasSeg.height); }; img.src=images[currentImageIndex]; }
+            function resetClicks(){ inputLabels=[]; inputPoints=[]; ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height); }
 
-
-        function drawBox() {
-            // Clear the canvas
-            let canvas = document.getElementById('img_seg');
-            let ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            // Draw a rectangle on the canvas to show the box
-            let x = start[0] - canvas.offsetLeft;
-            let y = start[1] - canvas.offsetTop;
-            let width = end[0] - start[0];
-            let height = end[1] - start[1];
-            ctx.beginPath();
-            ctx.rect(x, y, width, height);
-            ctx.strokeStyle = 'blue';
-            ctx.stroke();
-        }
-
-        document.getElementById('downloadImages').addEventListener('click',zipAndDownload);
-
-        //add box listeners
-        document.getElementById('img_seg').addEventListener('mousedown', box_mode_down);
-        document.getElementById('img_seg').addEventListener('mousemove', box_mode_move);
-        document.getElementById('img_seg').addEventListener('mouseup', box_mouse_up);
-
-        document.getElementById('modeBox').addEventListener('click', function() {
-            mode = 'box';
-            document.getElementById('img_seg').classList.remove('img_seg_click');
-            document.getElementById('img_seg').classList.add('img_seg_box');
-
-            document.getElementById('modeClick').classList.remove('button-selection-pressed');
-            document.getElementById('modeBox').classList.add('button-selection-pressed');
-
-            //redraw canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            //hide reset button
-            document.getElementById('resetButton').style.display = 'none';
-
-
-
-            // add listeners to the canvas
+            document.getElementById('downloadImages').addEventListener('click', zipAndDownload);
             canvas.addEventListener('mousedown', box_mode_down);
             canvas.addEventListener('mousemove', box_mode_move);
             canvas.addEventListener('mouseup', box_mouse_up);
 
-            //remove, if exists, click listeners
-            canvas.removeEventListener('click', click_mode);
+            document.getElementById('modeBox').addEventListener('click', function(){ mode='box'; canvas.classList.remove('img_seg_click'); canvas.classList.add('img_seg_box'); document.getElementById('modeClick').classList.remove('button-selection-pressed'); this.classList.add('button-selection-pressed'); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height); document.getElementById('resetButton').style.display='none'; canvas.addEventListener('mousedown',box_mode_down); canvas.addEventListener('mousemove',box_mode_move); canvas.addEventListener('mouseup',box_mouse_up); canvas.removeEventListener('click',click_mode); });
 
+            document.getElementById('modeClick').addEventListener('click', function(){ mode='click'; canvas.classList.remove('img_seg_box'); canvas.classList.add('img_seg_click'); document.getElementById('modeBox').classList.remove('button-selection-pressed'); this.classList.add('button-selection-pressed'); canvas.addEventListener('click', click_mode); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height); document.getElementById('resetButton').style.display='inline'; canvas.removeEventListener('mousedown',box_mode_down); canvas.removeEventListener('mousemove',box_mode_move); canvas.removeEventListener('mouseup',box_mouse_up); });
 
-        });
+            document.getElementById('generateButton').addEventListener('click', function(){ document.getElementById('loading').style.display='block'; const dataUrl=images[currentImageIndex]; const base64Image=dataUrl.split(',')[1]; let jsonData; if(mode==='click'){ jsonData={ file:base64Image, fileName:fileNames[currentImageIndex], folderName:folderName, again:sendingAgain, input_labels:inputLabels, input_points:inputPoints, sessionIdentifier:sessionIdentifier }; } else { jsonData={ file:base64Image, fileName:fileNames[currentImageIndex], folderName:folderName, box:box, again:sendingAgain, sessionIdentifier:sessionIdentifier }; } do_the_fetch_box(jsonData); });
 
-        document.getElementById('modeClick').addEventListener('click', function() {
-            mode = 'click';
-            document.getElementById('img_seg').classList.remove('img_seg_box');
-            document.getElementById('img_seg').classList.add('img_seg_click');
+            document.getElementById('imageLoader').addEventListener('click', handleImage, false);
 
-            document.getElementById('modeBox').classList.remove('button-selection-pressed');
-            document.getElementById('modeClick').classList.add('button-selection-pressed');
+            document.getElementById('pushButton').addEventListener('click', function(){ if(mode==='click' && inputLabels.length===0){ alert('Please select at least one point before moving to the next image'); return; } if(mode==='box' && box.length===0){ alert('Please select a box before moving to the next image'); return; } if(image_b64_ready===undefined){ alert('Please generate the mask before moving to the next image'); return; } const resCanvas=document.getElementById('img_res'); const dataUrl=resCanvas.toDataURL('image/png'); images_ready.push(dataUrl); image_b64_ready=undefined; rectangles=[]; currentImageIndex++; sendingAgain=false; updateProgress(currentImageIndex); if(currentImageIndex < size_of_images){ loadImage(); } else { ctx.clearRect(0,0,canvas.width,canvas.height); ctxSeg.clearRect(0,0,canvasSeg.width,canvasSeg.height); const end_time=new Date().getTime(); const time=end_time - timer; time_spend = time/1000; fetch('<%= apiUrl %>/data/savetimer',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({time: time, sessionIdentifier: sessionIdentifier}) }); updateProgress(currentImageIndex); const urlParams_=new URLSearchParams(window.location.search); const name_of_person_=urlParams_.get('name_of_person'); const backContainer=document.getElementById('backButtonContainer'); backContainer.style.display='block'; document.getElementById('backButton').onclick=function(){ window.location.href='/index?name_of_person='+name_of_person_; }; alert('Segmentation is over: click in "Download Images" to download the images and time spent'); } });
 
-            // add listeners to the canvas
-            document.getElementById('img_seg').addEventListener('click', click_mode);
+            document.getElementById('resetButton').addEventListener('click', resetClicks);
 
-            //redraw canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            //display reset button
-            document.getElementById('resetButton').style.display = 'inline'
-            
-
-            //remove, if exists, box listeners
-            canvas.removeEventListener('mousedown', box_mode_down);
-            canvas.removeEventListener('mousemove', box_mode_move);
-            canvas.removeEventListener('mouseup', box_mouse_up);
-
-
-        });
-
-        
-        document.getElementById('generateButton').addEventListener('click', function() {
-        // Show the loading animation
-            document.getElementById('loading').style.display = 'block';
-
-           
-        
-            var dataUrl = images[currentImageIndex];
-
-            var base64Image = dataUrl.split(',')[1];
-
-            if (mode === 'click') {
-                    var jsonData = {
-                        file: base64Image,
-                        fileName: fileNames[currentImageIndex],
-                        folderName: folderName,
-                        again: sendingAgain,
-                        input_labels: inputLabels,
-                        input_points: inputPoints,
-                        sessionIdentifier: sessionIdentifier
-                        
-                    };
-
-                }else{
-                // Create a JSON object with the base64 image, input labels, and input points
-                var jsonData = {
-                        file: base64Image,
-                        fileName: fileNames[currentImageIndex],
-                        folderName: folderName,
-                        box: box,
-                        again: sendingAgain,
-                        sessionIdentifier: sessionIdentifier
-
-                    };
-
-                }
-
-
-            do_the_fetch_box(jsonData);
-        });
-       
-          
-        function updateProgress(progress) {
-            // Update the progress bar, value will be progress/images.lenght on int 
-            document.getElementById('imageProgress').value = progress/fileNames.length * 100
-            document.getElementById('progressInfo').textContent = progress + '/' + fileNames.length;
-        }
-
-        
-        async function handleImage(e) {
-            sendingAgain = false;
-            images_ready = [];
-            currentImageIndex = 0;
-
-            // if fileNames is not empty, it means that the user has already loaded the images
-            if (fileNames.length > 0) {
-                alert('You have already loaded the images, restart if something went wrong');
-                return;
-            }
-            
-            
-            folderName = document.getElementById('folderName').value;
-
-
-            if (folderName === '') {
-                alert('Please enter a folder name');
-                return;
-            }
-
-            sessionIdentifier = sessionIdentifier + "-" + folderName;
-            //get name of person from parameter if exists
-            var urlParams = new URLSearchParams(window.location.search);
-            var name_of_person = urlParams.get('name_of_person');
-            if (name_of_person) {
-                sessionIdentifier = sessionIdentifier + "-" + name_of_person;
-            }
-
-            try {
-                // Fetch the image names from the server 
-                const response = await fetch('<%= apiUrl %>/image/list?folderName=' + folderName, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const data = await response.json();
-
-                // The image names are returned in the 'images' property
-                fileNames = data.images;
-                console.log(fileNames);
-
-                //if 400, alert that the name of the folder is incorrect or do not exist
-                if (response.status === 400) {
-                    alert('The folder name is incorrect or does not exist');
-                    return;
-                }
-
-                updateProgress(0);
-
-                //start timer, it is the now datetime 
-
-                // Fetch each image from the server and push them to the images array
-                for (let i = 0; i < fileNames.length; i++) {
-                    const imageResponse = await fetch('<%= apiUrl %>/image' + '?imageName=' + fileNames[i] + '&folderName=' + folderName, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    const imageData = await imageResponse.json();
-                    // The image is returned as a base64 string in the 'image' property
-                    images.push('data:image/png;base64,' + imageData.image);
-                    if (i == 0) {
-                        loadImage();
-                    }
-                }
-                timer = new Date().getTime();
-
-
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-            function loadImage() {
-                img.onload = function() {
-                    var maxWidth = 500; // Max width for the image
-                    var ratio = 0;  // Used for aspect ratio
-
-                    // Check if the current width is larger than the max
-                    if(img.width > maxWidth){
-                        ratio = maxWidth / img.width;   // get ratio for scaling image
-                        canvas.width = maxWidth;
-                        canvas.height = img.height * ratio;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        // draw second canvas, which is the same size as the first one
-                        
-                    } else {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0, img.width, img.height);
-                    }
-                    canvasSeg.width = canvas.width;
-                    canvasSeg.height = canvas.height;
-                    // fill black 
-                    ctxSeg.fillStyle = 'black';
-                    ctxSeg.fillRect(0, 0, canvasSeg.width, canvasSeg.height);
-                        
-                }
-                img.src = images[currentImageIndex];
-            }
-
-        document.getElementById('imageLoader').addEventListener('click', handleImage, false);
-
-
-        document.getElementById('pushButton').addEventListener('click', function() {
-            
-            //check for each mode if the inputs are correct
-            if (mode === 'click' && inputLabels.length === 0) {
-                alert('Please select at least one point before moving to the next image');
-                return;
-            }
-            if (mode === 'box' && box.length === 0) {
-                alert('Please select a box before moving to the next image');
-                return;
-            }
-
-            if (image_b64_ready === undefined) {
-                alert('Please generate the mask before moving to the next image');
-                return;
-            }
-            var canvas = document.getElementById('img_res'); 
-            var dataUrl = canvas.toDataURL('image/png')
-            images_ready.push(dataUrl);
-            image_b64_ready = undefined;
-
-            var data = {
-                imageWidth: img.width,
-                imageHeight: img.height,
-                rectangles: rectangles
-            };
-            rectangles = [];
-            currentImageIndex++;
-            sendingAgain = false;
-            updateProgress(currentImageIndex);
-            
-
-            if (currentImageIndex < size_of_images) {
-                loadImage();
-            }else{
-                
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctxSeg.clearRect(0, 0, canvasSeg.width, canvasSeg.height);
-                //alert segmentation is over 
-                let end_time = new Date().getTime();
-                let time = end_time - timer;
-                // turn into seconds
-                time_spend = time / 1000; 
-                //send time to the server 
-                fetch('<%= apiUrl %>/data/savetimer', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({time: time, sessionIdentifier: sessionIdentifier})  // send the JSON data
-                })
-       
-
-                updateProgress(currentImageIndex);
-                let urlParams_ = new URLSearchParams(window.location.search);
-                let name_of_person_ = urlParams_.get('name_of_person') 
-                const backButtonContainer = document.getElementById('backButtonContainer');
-                const backButton = document.getElementById('backButton');
-                backButtonContainer.style.display = 'block';
-                backButton.onclick = function() {
-                    window.location.href = '/index?name_of_person=' + name_of_person_;
-                };
-
-                //alert segmentation is over 
-                alert('Segmentation is over: click in "Download Images" to download the images and time spent');
-
-            }
-        });
-
-
-        function updateSelectedButton(button) {
-            // Remove the border from the previously selected button
-            if (selectedButton) {
-                selectedButton.style.border = 'none';
-            }
-
-            // Add a border to the newly selected button
-            button.style.border = '3px solid green';
-
-            // Update the selected button
-            selectedButton = button;
-        }
-
-        // Initialize the selected button
-        var selectedButton = null;
-
-        // Add an event listener to the reset button
-        document.getElementById('resetButton').addEventListener('click', function() {
-            // Clear the inputLabels and inputPoints arrays
-            inputLabels = [];
-            inputPoints = [];
-
-            // Clear the canvas
-            let canvas = document.getElementById('img_seg');
-            let ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Reset the selected button
-            if (selectedButton) {
-                selectedButton.style.border = 'none';
-                selectedButton = null;
-            }
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-                const inputField = document.getElementById('folderName');
-                
-                inputField.addEventListener('click', async function() {
-                    // Check if the list is already populated to avoid refetching
-                    if(document.getElementById('folderList').options.length === 0) {
-                        try {
-                            const response = await fetch('<%= apiUrl %>/data/list');
-                            const data = await response.json();
-                            const folderList = document.getElementById('folderList');
-
-                            const folders = data.folders;
-
-                            folders.forEach(function(folder) {
-                                console.log(folder);
-                                const option = document.createElement('option');
-
-                                option.value = folder;
-
-                                folderList.appendChild(option);
-                            });
-
-                        } catch (error) {
-                            console.error('Error:', error);
-                            alert('Error: ' + error);
-                        }
-                    }
-                });
-           });
-
-
-       
-
-       
+            document.addEventListener('DOMContentLoaded', function(){ const inputField=document.getElementById('folderName'); inputField.addEventListener('click', async function(){ if(document.getElementById('folderList').options.length===0){ try { const response=await fetch('<%= apiUrl %>/data/list'); const data=await response.json(); const folderList=document.getElementById('folderList'); data.folders.forEach(function(folder){ const option=document.createElement('option'); option.value=folder; folderList.appendChild(option); }); } catch(err){ console.error('Error:', err); alert('Error: '+ err); } } }); });
         </script>
-
-    </div>
 </body>
 </html>
 
